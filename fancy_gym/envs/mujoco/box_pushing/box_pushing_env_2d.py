@@ -29,8 +29,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
-        self.init_qpos_box_pushing = np.array([0., 0., 0.6, 0.15, -0.0021582, 1., 0., 0., 0.])
-        self.init_qvel_box_pushing = np.zeros(8)
         self.frame_skip = frame_skip
 
         self._q_max = q_max
@@ -44,6 +42,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "2d_box_pushing.xml"),
                            frame_skip=self.frame_skip,
                            mujoco_bindings="mujoco")
+        self.init_qpos_box_pushing = self.data.qpos.copy()
+        self.init_qvel_box_pushing = np.zeros(8)
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
 
     def step(self, action):
@@ -88,19 +88,24 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
-        qpos = self.init_qpos.copy()
+        qpos = self.init_qpos_box_pushing.copy()
 
         # draw box pos
-        x = np.random.uniform(low=.2, high=.6)
-        y = np.random.uniform(low=-.8, high=.7)
+        x = np.random.uniform(low=0, high=.3)
+        y = np.random.uniform(low=-.8, high=.8)
 
         # set box pos
-        qpos[0] = x
-        qpos[1] = x
+        qpos[0] += x
+        qpos[1] += y
 
         # set finger pos
-        qpos[7] = x
-        qpos[8] = x
+        qpos[7] += x
+        qpos[8] += y
+
+        # rotate box
+        theta = self.np_random.uniform(low=0, high=np.pi * 2)
+        quat = rot_to_quat(theta, np.array([0, 0, 1]))
+        qpos[3:7] = quat
 
         self.set_state(qpos, self.init_qvel_box_pushing)
         #box_init_pos = self.sample_context() 
