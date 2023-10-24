@@ -26,7 +26,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
         self.init_qpos_box_pushing = np.array([0., 0., 0.6, 0.15, -0.0021582, 1., 0., 0., 0.])
@@ -88,14 +88,27 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
-        # rest box to initial position
-        self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
-        box_init_pos = self.sample_context() if self.random_init else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
-        self.data.joint("box_joint").qpos = box_init_pos
+        qpos = self.init_qpos.copy()
+
+        # draw box pos
+        x = np.random.uniform(low=.2, high=.6)
+        y = np.random.uniform(low=-.8, high=.7)
+
+        # set box pos
+        qpos[0] = x
+        qpos[1] = x
+
+        # set finger pos
+        qpos[7] = x
+        qpos[8] = x
+
+        self.set_state(qpos, self.init_qvel_box_pushing)
+        #box_init_pos = self.sample_context() 
+        #self.data.joint("box_joint").qpos = box_init_pos
 
         # set target position
         box_target_pos = self.sample_context()
-        while np.linalg.norm(box_target_pos[:2] - box_init_pos[:2]) < 0.3:
+        while np.linalg.norm(box_target_pos[:2] - [x,y]) < 0.3:
             box_target_pos = self.sample_context()
         # box_target_pos[0] = 0.4
         # box_target_pos[1] = -0.3
@@ -105,9 +118,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.model.body_pos[3] = box_target_pos[:3]
         self.model.body_quat[3] = box_target_pos[-4:]
 
-        # set the robot to the right configuration (rod tip in the box)
-        desired_tcp_pos = box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
-        self.data.qpos[:7] = desired_tcp_pos[2:]
 
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
