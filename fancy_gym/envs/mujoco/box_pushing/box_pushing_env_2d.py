@@ -26,6 +26,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
+    _target_pos = np.zeros(3)
+    _target_quat = np.zeros(4)
+
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
@@ -106,11 +109,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         target_x = x
         target_y = y
-        while np.linalg.norm(np.array([target_x, target_y]) - [x,y]) < 0.3:
-            target_x = np.random.uniform(*box_limit_x)
-            target_y = np.random.uniform(*box_limit_y)
+        #while np.linalg.norm(np.array([target_x, target_y]) - [x,y]) < 0.3:
+        #    target_x = np.random.uniform(*box_limit_x)
+        #    target_y = np.random.uniform(*box_limit_y)
 
-        target_theta = self.np_random.uniform(low=0, high=np.pi * 2)
+        target_theta = theta # self.np_random.uniform(low=0, high=np.pi * 2)
         self.set_target_pos_and_rotation(target_x, target_y, target_theta)
 
 
@@ -178,30 +181,30 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return self.data.body("box_0").cvel.copy()
 
     def get_box_pos(self):
-        return self.data.body("box_0").xpos.copy()
+        return self.data.body("box_0").xpos.copy() 
 
     def get_box_quat(self):
         return self.data.body("box_0").xquat.copy()
 
     def get_target_pos(self):
-        return self.data.body("replan_target_pos").xpos.copy()
+        return self._target_pos
 
     def get_target_quat(self):
-        return self.data.body("replan_target_pos").xquat.copy()
+        return self._target_quat
 
     def get_finger_pos(self):
         return self.data.site("finger_tip").xpos.copy()
 
     def set_box_pos(self, x_offset, y_offset):
         qpos = self.data.qpos.copy()
-        qpos[0] += x_offset
-        qpos[1] += y_offset
+        qpos[0] = x_offset + self.init_qpos_box_pushing[0]
+        qpos[1] = y_offset + self.init_qpos_box_pushing[1]
         self.data.qpos = qpos
 
     def set_finger_pos(self, x_offset, y_offset):
         qpos = self.data.qpos.copy()
-        qpos[7] += x_offset
-        qpos[8] += y_offset
+        qpos[7] = x_offset + self.init_qpos_box_pushing[7]
+        qpos[8] = y_offset + self.init_qpos_box_pushing[8]
         self.data.qpos = qpos
 
     def set_box_rotation(self, theta):
@@ -213,10 +216,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def set_target_pos_and_rotation(self, x, y, theta):
         pos = np.array([x,y,0])
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
-        self.model.body_pos[2] = pos[:3].copy()
-        self.model.body_quat[2] = quat.copy()
-        self.model.body_pos[3] = pos[:3].copy()
+
+        self.model.body_pos[3] = pos[:3].copy() + self.init_qpos_box_pushing[:3]
         self.model.body_quat[3] = quat.copy()
+
+        self._target_quat = quat
+        self._target_pos = pos
+
 
 class BoxPushingDense(BoxPushingEnvBase):
     def __init__(self, frame_skip: int = 10, random_init: bool = False):
