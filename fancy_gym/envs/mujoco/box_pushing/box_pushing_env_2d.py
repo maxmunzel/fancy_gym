@@ -45,8 +45,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "2d_box_pushing.xml"),
                            frame_skip=self.frame_skip,
                            mujoco_bindings="mujoco")
-        self.init_qpos_box_pushing = self.data.qpos.copy()
-        self.init_qvel_box_pushing = np.zeros(8)
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
 
     def step(self, action):
@@ -91,9 +89,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
-        qpos = self.init_qpos_box_pushing.copy()
-
-        box_limit_x = (0, 0.3)
+        box_limit_x = (.2, 0.6)
         box_limit_y = (-0.8, 0.8)
 
         # draw box pos
@@ -109,9 +105,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         target_x = x
         target_y = y
-        #while np.linalg.norm(np.array([target_x, target_y]) - [x,y]) < 0.3:
-        #    target_x = np.random.uniform(*box_limit_x)
-        #    target_y = np.random.uniform(*box_limit_y)
+        while np.linalg.norm(np.array([target_x, target_y]) - [x,y]) < 0.3:
+            target_x = np.random.uniform(*box_limit_x)
+            target_y = np.random.uniform(*box_limit_y)
 
         target_theta = theta # self.np_random.uniform(low=0, high=np.pi * 2)
         self.set_target_pos_and_rotation(target_x, target_y, target_theta)
@@ -197,14 +193,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def set_box_pos(self, x_offset, y_offset):
         qpos = self.data.qpos.copy()
-        qpos[0] = x_offset + self.init_qpos_box_pushing[0]
-        qpos[1] = y_offset + self.init_qpos_box_pushing[1]
+        qpos[0] = x_offset 
+        qpos[1] = y_offset 
         self.data.qpos = qpos
 
     def set_finger_pos(self, x_offset, y_offset):
         qpos = self.data.qpos.copy()
-        qpos[7] = x_offset + self.init_qpos_box_pushing[7]
-        qpos[8] = y_offset + self.init_qpos_box_pushing[8]
+        qpos[7] = x_offset 
+        qpos[8] = y_offset 
         self.data.qpos = qpos
 
     def set_box_rotation(self, theta):
@@ -217,7 +213,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         pos = np.array([x,y,0])
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
 
-        self.model.body_pos[3] = pos[:3].copy() + self.init_qpos_box_pushing[:3]
+        self.model.body_pos[3] = pos[:3].copy() 
         self.model.body_quat[3] = quat.copy()
 
         self._target_quat = quat
