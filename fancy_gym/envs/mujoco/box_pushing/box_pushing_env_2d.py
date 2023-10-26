@@ -62,11 +62,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         episode_end = True if self._steps >= MAX_EPISODE_STEPS_BOX_PUSHING else False
 
-        box_pos = self.data.body("box_0").xpos.copy()
-        box_quat = self.data.body("box_0").xquat.copy()
-        target_pos = self.data.body("replan_target_pos").xpos.copy()
-        target_quat = self.data.body("replan_target_pos").xquat.copy()
-        rod_tip_pos = self.data.site("finger_tip").xpos.copy()
+        box_pos = self.get_box_pos()
+        box_quat = self.get_box_quat()
+        target_pos = self.get_target_pos()
+        target_quat = self.get_target_quat()
+        rod_tip_pos = self.get_finger_pos()
 
         if not unstable_simulation:
             reward = self._get_reward(episode_end, box_pos, box_quat, target_pos, target_quat,
@@ -90,38 +90,28 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def reset_model(self):
         qpos = self.init_qpos_box_pushing.copy()
 
+        box_limit_x = (0, 0.3)
+        box_limit_y = (-0.8, 0.8)
+
         # draw box pos
-        x = np.random.uniform(low=0, high=.3)
-        y = np.random.uniform(low=-.8, high=.8)
+        x = np.random.uniform(*box_limit_x)
+        y = np.random.uniform(*box_limit_y)
 
-        # set box pos
-        qpos[0] += x
-        qpos[1] += y
 
-        # set finger pos
-        qpos[7] += x
-        qpos[8] += y
+        self.set_box_pos(x, y)
+        self.set_finger_pos(x, y)
 
-        # rotate box
         theta = self.np_random.uniform(low=0, high=np.pi * 2)
-        quat = rot_to_quat(theta, np.array([0, 0, 1]))
-        qpos[3:7] = quat
+        self.set_box_rotation(theta)
 
-        self.set_state(qpos, self.init_qvel_box_pushing)
-        #box_init_pos = self.sample_context() 
-        #self.data.joint("box_joint").qpos = box_init_pos
+        target_x = x
+        target_y = y
+        while np.linalg.norm(np.array([target_x, target_y]) - [x,y]) < 0.3:
+            target_x = np.random.uniform(*box_limit_x)
+            target_y = np.random.uniform(*box_limit_y)
 
-        # set target position
-        box_target_pos = self.sample_context()
-        while np.linalg.norm(box_target_pos[:2] - [x,y]) < 0.3:
-            box_target_pos = self.sample_context()
-        # box_target_pos[0] = 0.4
-        # box_target_pos[1] = -0.3
-        # box_target_pos[-4:] = np.array([0.0, 0.0, 0.0, 1.0])
-        self.model.body_pos[2] = box_target_pos[:3]
-        self.model.body_quat[2] = box_target_pos[-4:]
-        self.model.body_pos[3] = box_target_pos[:3]
-        self.model.body_quat[3] = box_target_pos[-4:]
+        target_theta = self.np_random.uniform(low=0, high=np.pi * 2)
+        self.set_target_pos_and_rotation(target_x, target_y, target_theta)
 
 
         mujoco.mj_forward(self.model, self.data)
@@ -142,15 +132,16 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def _get_obs(self):
         obs = np.concatenate([
-            self.data.qpos[:7].copy(),  # joint position
-            self.data.qvel[:7].copy(),  # joint velocity
+            # self.data.qpos[:7].copy(),  # joint position
+            # self.data.qvel[:7].copy(),  # joint velocity
             # self.data.qfrc_bias[:7].copy(),  # joint gravity compensation
             # self.data.site("rod_tip").xpos.copy(),  # position of rod tip
             # self.data.body("push_rod").xquat.copy(),  # orientation of rod
-            self.data.body("box_0").xpos.copy(),  # position of box
-            self.data.body("box_0").xquat.copy(),  # orientation of box
-            self.data.body("replan_target_pos").xpos.copy(),  # position of target
-            self.data.body("replan_target_pos").xquat.copy()  # orientation of target
+            self.get_finger_pos(),
+            self.get_box_pos(),  
+            self.get_box_quat(),  
+            self.get_target_pos(),  
+            self.get_target_quat(),  
         ])
         return obs
 
@@ -170,8 +161,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             penalty -= v_coeff * abs(np.sum(q_dot_error[q_dot_error > 0.]))
         return penalty
 
-    def _get_box_vel(self):
-        return self.data.body("box_0").cvel.copy()
 
     def get_body_jacp(self, name):
         id = mujoco.mj_name2id(self.model, 1, name)
@@ -185,113 +174,49 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         mujoco.mj_jacBody(self.model, self.data, None, jacr, id)
         return jacr
 
-    def calculateOfflineIK(self, desired_cart_pos, desired_cart_quat):
-        """
-        calculate offline inverse kinematics for franka pandas
-        :param desired_cart_pos: desired cartesian position of tool center point
-        :param desired_cart_quat: desired cartesian quaternion of tool center point
-        :return: joint angles
-        """
-        J_reg = 1e-6
-        w = np.diag([1, 1, 1, 1, 1, 1, 1])
-        target_theta_null = np.array([
-            3.57795216e-09,
-            1.74532920e-01,
-            3.30500960e-08,
-            -8.72664630e-01,
-            -1.14096181e-07,
-            1.22173047e00,
-            7.85398126e-01])
-        eps = 1e-5          # threshold for convergence
-        IT_MAX = 1000
-        dt = 1e-3
-        i = 0
-        pgain = [
-            33.9403713446798,
-            30.9403713446798,
-            33.9403713446798,
-            27.69370238555632,
-            33.98706171459314,
-            30.9185531893281,
-        ]
-        pgain_null = 5 * np.array([
-            7.675519770796831,
-            2.676935478437176,
-            8.539040163444975,
-            1.270446361314313,
-            8.87752182480855,
-            2.186782233762969,
-            4.414432577659688,
-        ])
-        pgain_limit = 20
-        q = self.data.qpos[:7].copy()
-        qd_d = np.zeros(q.shape)
-        old_err_norm = np.inf
+    def _get_box_vel(self):
+        return self.data.body("box_0").cvel.copy()
 
-        while True:
-            q_old = q
-            q = q + dt * qd_d
-            q = np.clip(q, q_min, q_max)
-            self.data.qpos[:7] = q
-            mujoco.mj_forward(self.model, self.data)
-            current_cart_pos = self.data.body("tcp").xpos.copy()
-            current_cart_quat = self.data.body("tcp").xquat.copy()
+    def get_box_pos(self):
+        return self.data.body("box_0").xpos.copy()
 
-            cart_pos_error = np.clip(desired_cart_pos - current_cart_pos, -0.1, 0.1)
+    def get_box_quat(self):
+        return self.data.body("box_0").xquat.copy()
 
-            if np.linalg.norm(current_cart_quat - desired_cart_quat) > np.linalg.norm(current_cart_quat + desired_cart_quat):
-                current_cart_quat = -current_cart_quat
-            cart_quat_error = np.clip(get_quaternion_error(current_cart_quat, desired_cart_quat), -0.5, 0.5)
+    def get_target_pos(self):
+        return self.data.body("replan_target_pos").xpos.copy()
 
-            err = np.hstack((cart_pos_error, cart_quat_error))
-            err_norm = np.sum(cart_pos_error**2) + np.sum((current_cart_quat - desired_cart_quat)**2)
-            if err_norm > old_err_norm:
-                q = q_old
-                dt = 0.7 * dt
-                continue
-            else:
-                dt = 1.025 * dt
+    def get_target_quat(self):
+        return self.data.body("replan_target_pos").xquat.copy()
 
-            if err_norm < eps:
-                break
-            if i > IT_MAX:
-                break
+    def get_finger_pos(self):
+        return self.data.site("finger_tip").xpos.copy()
 
-            old_err_norm = err_norm
+    def set_box_pos(self, x_offset, y_offset):
+        qpos = self.data.qpos.copy()
+        qpos[0] += x_offset
+        qpos[1] += y_offset
+        self.data.qpos = qpos
 
-            ### get Jacobian by mujoco
-            self.data.qpos[:7] = q
-            mujoco.mj_forward(self.model, self.data)
+    def set_finger_pos(self, x_offset, y_offset):
+        qpos = self.data.qpos.copy()
+        qpos[7] += x_offset
+        qpos[8] += y_offset
+        self.data.qpos = qpos
 
-            jacp = self.get_body_jacp("tcp")[:, :7].copy()
-            jacr = self.get_body_jacr("tcp")[:, :7].copy()
+    def set_box_rotation(self, theta):
+        quat = rot_to_quat(theta, np.array([0, 0, 1]))
+        qpos = self.data.qpos.copy()
+        qpos[3:7] = quat
+        self.data.qpos = qpos
 
-            J = np.concatenate((jacp, jacr), axis=0)
-
-            Jw = J.dot(w)
-
-            # J * W * J.T + J_reg * I
-            JwJ_reg = Jw.dot(J.T) + J_reg * np.eye(J.shape[0])
-
-            # Null space velocity, points to home position
-            qd_null = pgain_null * (target_theta_null - q)
-
-            margin_to_limit = 0.1
-            qd_null_limit = np.zeros(qd_null.shape)
-            qd_null_limit_max = pgain_limit * (q_max - margin_to_limit - q)
-            qd_null_limit_min = pgain_limit * (q_min + margin_to_limit - q)
-            qd_null_limit[q > q_max - margin_to_limit] += qd_null_limit_max[q > q_max - margin_to_limit]
-            qd_null_limit[q < q_min + margin_to_limit] += qd_null_limit_min[q < q_min + margin_to_limit]
-            qd_null += qd_null_limit
-
-            # W J.T (J W J' + reg I)^-1 xd_d + (I - W J.T (J W J' + reg I)^-1 J qd_null
-            qd_d = np.linalg.solve(JwJ_reg, pgain * err - J.dot(qd_null))
-
-            qd_d = w.dot(J.transpose()).dot(qd_d) + qd_null
-
-            i += 1
-
-        return q
+    def set_target_pos_and_rotation(self, x, y, theta):
+        pos = np.array([x,y,0])
+        quat = rot_to_quat(theta, np.array([0, 0, 1]))
+        self.model.body_pos[2] = pos[:3].copy()
+        self.model.body_quat[2] = quat.copy()
+        self.model.body_pos[3] = pos[:3].copy()
+        self.model.body_quat[3] = quat.copy()
 
 class BoxPushingDense(BoxPushingEnvBase):
     def __init__(self, frame_skip: int = 10, random_init: bool = False):
