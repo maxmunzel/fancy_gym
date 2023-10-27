@@ -6,12 +6,11 @@ from gym.envs.mujoco import MujocoEnv
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import rot_to_quat, get_quaternion_error, rotation_distance
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import q_max, q_min, q_dot_max, q_torque_max
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-
+import gym
 import mujoco
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 100
 
-BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
 
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
@@ -28,6 +27,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     _target_pos = np.zeros(3)
     _target_quat = np.zeros(4)
+    render_mode = None
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
@@ -118,12 +118,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self._episode_energy = 0.
 
         return self._get_obs()
-
-    def sample_context(self):
-        pos = self.np_random.uniform(low=BOX_POS_BOUND[0], high=BOX_POS_BOUND[1])
-        theta = self.np_random.uniform(low=0, high=np.pi * 2)
-        quat = rot_to_quat(theta, np.array([0, 0, 1]))
-        return np.concatenate([pos, quat])
 
     def _get_reward(self, episode_end, box_pos, box_quat, target_pos, target_quat,
                     rod_tip_pos, rod_quat, qpos, qvel, action):
