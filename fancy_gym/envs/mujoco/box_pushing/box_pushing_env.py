@@ -6,12 +6,83 @@ from gym.envs.mujoco import MujocoEnv
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import rot_to_quat, get_quaternion_error, rotation_distance
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import q_max, q_min, q_dot_max, q_torque_max
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
+from typing import NamedTuple
 
 import mujoco
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 100
 
 BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
+
+
+import numpy as np
+
+class PIDController:
+    def __init__(self, kp, ki, kd, setpoint):
+        self.kp = kp
+        self.ki = ki
+        self.kd = kd
+        self.setpoint = setpoint
+        self.integral = np.array([0.0])
+        self.previous_error = np.array([0.0])
+
+    def update(self, input_value, dt):
+        """
+        Update the PID controller with a new input value.
+
+        :param input_value: The current value of the variable being controlled.
+        :param dt: The time interval since the last update.
+        :return: The output of the PID controller.
+        """
+        error = self.setpoint - input_value
+        self.integral += error * dt
+        derivative = (error - self.previous_error) / dt
+        output = self.kp * error + self.ki * self.integral + self.kd * derivative
+        self.previous_error = error
+        return output
+
+# Example usage
+pid = PIDController(kp=1.0, ki=0.1, kd=0.05, setpoint=np.array([10.0]))
+output = pid.update(np.array([8.0]), dt=0.1)
+print(output)
+
+
+class Mass(NamedTuple):
+    """
+    A simple newtonian mass that can be pushed around. 
+    Used as the target for our tcp.
+    """
+    pos: np.ndarray
+    pos_min: np.ndarray
+    pos_max: np.ndarray
+    vel: np.ndarray
+    mass: float
+    linear_dampening: float
+    dt: float
+
+    def copy(self) -> "Mass":
+        return self._replace(
+            pos=self.pos.copy(),
+            pos_limits=self.pos_limits.copy(),
+            vel=self.vel.copy(),
+            force_limits=self.force_limits.copy(),
+        )
+
+    def step(self, force: np.ndarray) -> "Mass":
+        """Perform one step with the given external force and return the next state of the Mass system"""
+        dampening = self.linear_dampening * self.vel * self.mass 
+        a = (force - dampening) / self.mass
+        vel = a * self.dt + self.vel
+        pos = self.pos + self.vel * self.dt
+        for i in range(pos.shape[0]):
+            if pos[i] >= self.pos_max[i]:
+                pos[i] = self.pos_max[i]
+                vel[i] = 0
+            elif pos[i] <= self.pos_min[i]:
+                pos[i] = self.pos_min[i]
+                vel[i] = 0
+        return self._replace(pos=pos, vel=vel)
+
 
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
@@ -40,15 +111,42 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self._episode_energy = 0.
         self.random_init = random_init
+        self.tcp = Mass(
+            pos=np.zeros(2),
+            pos_min=np.array([0.15, -0.8]),
+            pos_max=np.array([1, 0.8]),
+            vel=np.zeros(2),
+            linear_dampening=0,
+            mass=0.0001,
+            dt=0.5
+        )
+        self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         MujocoEnv.__init__(self,
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "box_pushing.xml"),
                            frame_skip=self.frame_skip,
                            mujoco_bindings="mujoco")
-        self.action_space = spaces.Box(low=-1, high=1, shape=(7,))
+        self.reset_model()
 
     def step(self, action):
-        action = 10 * np.clip(action, self.action_space.low, self.action_space.high)
-        resultant_action = np.clip(action + self.data.qfrc_bias[:7].copy(), -q_torque_max, q_torque_max)
+        if len(action) > 2:
+            # handle gym magic
+            action=action[:2]
+        action = 10 * np.array(action)
+        self.tcp = self.tcp.step(action)
+
+        desired_tcp_pos = np.array([self.tcp.pos[0], self.tcp.pos[1], 0.25])
+        desired_tcp_quat = np.array([0, 1, 0, 0])
+        
+        q = self.data.qpos.copy()
+        v = self.data.qvel.copy()
+        desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
+        self.data.qpos = q
+        self.data.qvel = v
+        #action = 10 * np.clip(action, self.action_space.low, self.action_space.high)
+        #resultant_action = np.clip(action + self.data.qfrc_bias[:7].copy(), -q_torque_max, q_torque_max)
+
+
+        resultant_action = desired_joint_pos
 
         unstable_simulation = False
 
@@ -114,6 +212,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         desired_tcp_quat = np.array([0, 1, 0, 0])
         desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
         self.data.qpos[:7] = desired_joint_pos
+        self.tcp = Mass(
+            pos=desired_tcp_pos[:2],
+            pos_min=np.array([0.15, -0.8]),
+            pos_max=np.array([1, 0.8]),
+            vel=np.zeros(2),
+            linear_dampening=.3,
+            mass=1,
+            dt=self.model.opt.timestep
+        )
 
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
