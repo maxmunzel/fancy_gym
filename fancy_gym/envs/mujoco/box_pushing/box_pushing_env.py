@@ -72,8 +72,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def __init__(self, frame_skip: int = 10, random_init: bool = False):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
-        self.init_qpos_box_pushing = np.array([0., 0., 0., -1.5, 0., 1.5, 0., 0., 0., 0.6, 0.45, 0.0, 1., 0., 0., 0.])
-        self.init_qvel_box_pushing = np.zeros(15)
+        self.init_qpos_box_pushing = np.array([0., 0., 0., -1.5, 0., 1.5, 0., 0., 0., 0.6, 0.45, 0.0, 1., 0., 0., 0.] + [0, 0])
+        self.init_qvel_box_pushing = np.zeros(15 + 2)
         self.frame_skip = frame_skip
 
         self._q_max = q_max
@@ -111,7 +111,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         action = 1 * np.array(action)
         self.tcp = self.tcp.step(action)
 
-        desired_tcp_pos = np.array([self.tcp.pos[0], self.tcp.pos[1], 0.15])
+        desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_quat = np.array([0, 1, 0, 0])
         
         q = self.data.qpos.copy()
@@ -132,7 +132,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         unstable_simulation = False
 
         try:
-            self.do_simulation(resultant_action, self.frame_skip)
+            self.do_simulation([0,0,0,0,0,0,0, action[0], action[1]], self.frame_skip)
         except Exception as e:
             print(e)
             unstable_simulation = True
