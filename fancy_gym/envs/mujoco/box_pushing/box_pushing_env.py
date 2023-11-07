@@ -2,6 +2,7 @@ import os
 
 import numpy as np
 from gym import utils, spaces
+from copy import deepcopy
 from gym.envs.mujoco import MujocoEnv
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import rot_to_quat, get_quaternion_error, rotation_distance
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import q_max, q_min, q_dot_max, q_torque_max
@@ -16,35 +17,6 @@ BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
 
 
 import numpy as np
-
-class PIDController:
-    def __init__(self, kp, ki, kd, setpoint):
-        self.kp = kp
-        self.ki = ki
-        self.kd = kd
-        self.setpoint = setpoint
-        self.integral = np.array([0.0])
-        self.previous_error = np.array([0.0])
-
-    def update(self, input_value, dt):
-        """
-        Update the PID controller with a new input value.
-
-        :param input_value: The current value of the variable being controlled.
-        :param dt: The time interval since the last update.
-        :return: The output of the PID controller.
-        """
-        error = self.setpoint - input_value
-        self.integral += error * dt
-        derivative = (error - self.previous_error) / dt
-        output = self.kp * error + self.ki * self.integral + self.kd * derivative
-        self.previous_error = error
-        return output
-
-# Example usage
-pid = PIDController(kp=1.0, ki=0.1, kd=0.05, setpoint=np.array([10.0]))
-output = pid.update(np.array([8.0]), dt=0.1)
-print(output)
 
 
 class Mass(NamedTuple):
@@ -63,9 +35,9 @@ class Mass(NamedTuple):
     def copy(self) -> "Mass":
         return self._replace(
             pos=self.pos.copy(),
-            pos_limits=self.pos_limits.copy(),
+            pos_max=self.pos_max.copy(),
+            pos_min=self.pos_min.copy(),
             vel=self.vel.copy(),
-            force_limits=self.force_limits.copy(),
         )
 
     def step(self, force: np.ndarray) -> "Mass":
@@ -73,7 +45,7 @@ class Mass(NamedTuple):
         dampening = self.linear_dampening * self.vel * self.mass 
         a = (force - dampening) / self.mass
         vel = a * self.dt + self.vel
-        pos = self.pos + self.vel * self.dt
+        pos = self.pos + vel * self.dt
         for i in range(pos.shape[0]):
             if pos[i] >= self.pos_max[i]:
                 pos[i] = self.pos_max[i]
@@ -111,42 +83,51 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self._episode_energy = 0.
         self.random_init = random_init
-        self.tcp = Mass(
+        self.default_tcp = Mass(
             pos=np.zeros(2),
             pos_min=np.array([0.15, -0.8]),
             pos_max=np.array([1, 0.8]),
-            vel=np.zeros(2),
+            vel=np.ones(2),
             linear_dampening=0,
-            mass=0.0001,
-            dt=0.5
+            mass=1,
+            dt=42
         )
+        self.tcp = None
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         MujocoEnv.__init__(self,
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "box_pushing.xml"),
                            frame_skip=self.frame_skip,
                            mujoco_bindings="mujoco")
+        self.default_tcp = self.default_tcp._replace(dt=self.dt)
         self.reset_model()
 
     def step(self, action):
         if len(action) > 2:
             # handle gym magic
             action=action[:2]
-        action = 10 * np.array(action)
+        if not self.tcp:
+            self.tcp = self.default_tcp.copy()
+
+        action = 1 * np.array(action)
         self.tcp = self.tcp.step(action)
 
-        desired_tcp_pos = np.array([self.tcp.pos[0], self.tcp.pos[1], 0.25])
+        desired_tcp_pos = np.array([self.tcp.pos[0], self.tcp.pos[1], 0.15])
         desired_tcp_quat = np.array([0, 1, 0, 0])
         
         q = self.data.qpos.copy()
         v = self.data.qvel.copy()
-        desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
+        self.desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
+        desired_joint_pos = self.desired_joint_pos
         self.data.qpos = q
         self.data.qvel = v
+
+        self.data.qpos[:7] = desired_joint_pos
+        self.data.qvel[:7] = 0
+
         #action = 10 * np.clip(action, self.action_space.low, self.action_space.high)
         #resultant_action = np.clip(action + self.data.qfrc_bias[:7].copy(), -q_torque_max, q_torque_max)
 
 
-        resultant_action = desired_joint_pos
 
         unstable_simulation = False
 
@@ -211,7 +192,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         desired_tcp_pos = box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
         desired_tcp_quat = np.array([0, 1, 0, 0])
         desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
-        self.data.qpos[:7] = desired_joint_pos
+
+        desired_joint_vel = (desired_joint_pos - self.data.qpos[:7])
+
+        self.data.qvel[:7] = desired_joint_vel
         self.tcp = Mass(
             pos=desired_tcp_pos[:2],
             pos_min=np.array([0.15, -0.8]),
@@ -219,7 +203,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             vel=np.zeros(2),
             linear_dampening=.3,
             mass=1,
-            dt=self.model.opt.timestep
+            dt=self.dt
         )
 
         mujoco.mj_forward(self.model, self.data)
@@ -290,6 +274,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         :param desired_cart_quat: desired cartesian quaternion of tool center point
         :return: joint angles
         """
+        old_q = self.data.qpos.copy()
+        old_v = self.data.qvel.copy()
         J_reg = 1e-6
         w = np.diag([1, 1, 1, 1, 1, 1, 1])
         target_theta_null = np.array([
@@ -301,7 +287,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             1.22173047e00,
             7.85398126e-01])
         eps = 1e-5          # threshold for convergence
-        IT_MAX = 1000
+        IT_MAX = 100
         dt = 1e-3
         i = 0
         pgain = [
@@ -389,6 +375,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
             i += 1
 
+        self.data.qpos = old_q
+        self.data.qvel = old_v
         return q
 
 class BoxPushingDense(BoxPushingEnvBase):
