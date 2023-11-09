@@ -16,46 +16,6 @@ MAX_EPISODE_STEPS_BOX_PUSHING = 100
 BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
 
 
-import numpy as np
-
-
-class Mass(NamedTuple):
-    """
-    A simple newtonian mass that can be pushed around. 
-    Used as the target for our tcp.
-    """
-    pos: np.ndarray
-    pos_min: np.ndarray
-    pos_max: np.ndarray
-    vel: np.ndarray
-    mass: float
-    linear_dampening: float
-    dt: float
-
-    def copy(self) -> "Mass":
-        return self._replace(
-            pos=self.pos.copy(),
-            pos_max=self.pos_max.copy(),
-            pos_min=self.pos_min.copy(),
-            vel=self.vel.copy(),
-        )
-
-    def step(self, force: np.ndarray) -> "Mass":
-        """Perform one step with the given external force and return the next state of the Mass system"""
-        dampening = self.linear_dampening * self.vel * self.mass 
-        a = (force - dampening) / self.mass
-        vel = a * self.dt + self.vel
-        pos = self.pos + vel * self.dt
-        for i in range(pos.shape[0]):
-            if pos[i] >= self.pos_max[i]:
-                pos[i] = self.pos_max[i]
-                vel[i] = 0
-            elif pos[i] <= self.pos_min[i]:
-                pos[i] = self.pos_min[i]
-                vel[i] = 0
-        return self._replace(pos=pos, vel=vel)
-
-
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
     franka box pushing environment
@@ -83,33 +43,19 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self._episode_energy = 0.
         self.random_init = random_init
-        self.default_tcp = Mass(
-            pos=np.zeros(2),
-            pos_min=np.array([0.15, -0.8]),
-            pos_max=np.array([1, 0.8]),
-            vel=np.ones(2),
-            linear_dampening=0,
-            mass=1,
-            dt=42
-        )
-        self.tcp = None
         self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         MujocoEnv.__init__(self,
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "box_pushing.xml"),
                            frame_skip=self.frame_skip,
                            mujoco_bindings="mujoco")
-        self.default_tcp = self.default_tcp._replace(dt=self.dt)
         self.reset_model()
 
     def step(self, action):
         if len(action) > 2:
             # handle gym magic
             action=action[:2]
-        if not self.tcp:
-            self.tcp = self.default_tcp.copy()
 
         action = 10 * np.array(action)
-        self.tcp = self.tcp.step(action)
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
@@ -124,11 +70,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self.data.qpos[:7] = desired_joint_pos
         self.data.qvel[:7] = 0
-
-        #action = 10 * np.clip(action, self.action_space.low, self.action_space.high)
-        #resultant_action = np.clip(action + self.data.qfrc_bias[:7].copy(), -q_torque_max, q_torque_max)
-
-
 
         unstable_simulation = False
 
@@ -199,16 +140,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         desired_joint_vel = (desired_joint_pos - self.data.qpos[:7])
 
         self.data.qvel[:7] = desired_joint_vel
-        self.tcp = Mass(
-            pos=desired_tcp_pos[:2],
-            pos_min=np.array([0.15, -0.8]),
-            pos_max=np.array([1, 0.8]),
-            vel=np.zeros(2),
-            linear_dampening=.3,
-            mass=1,
-            dt=self.dt
-        )
-
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
         self._episode_energy = 0.
