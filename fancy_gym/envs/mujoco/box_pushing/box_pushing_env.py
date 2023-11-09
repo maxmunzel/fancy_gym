@@ -72,7 +72,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def __init__(self, frame_skip: int = 10, random_init: bool = False):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
-        self.init_qpos_box_pushing = np.array([0., 0., 0., -1.5, 0., 1.5, 0., 0., 0., 0.6, 0.45, 0.0, 1., 0., 0., 0.] + [0, 0])
+        self.init_qpos_box_pushing = np.array([0., 0., 0., -1.5, 0., 1.5, 0., 0., 0., 0.6, 0.45, 0.0, 1., 0., 0., 0.] + [.20, 0])
         self.init_qvel_box_pushing = np.zeros(15 + 2)
         self.frame_skip = frame_skip
 
@@ -108,10 +108,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         if not self.tcp:
             self.tcp = self.default_tcp.copy()
 
-        action = 1 * np.array(action)
+        action = 10 * np.array(action)
         self.tcp = self.tcp.step(action)
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
+        desired_tcp_pos[2] += 0.055
         desired_tcp_quat = np.array([0, 1, 0, 0])
         
         q = self.data.qpos.copy()
@@ -175,6 +176,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
         box_init_pos = self.sample_context() if self.random_init else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
         self.data.joint("box_joint").qpos = box_init_pos
+        self.data.joint("finger_x_joint").qpos = box_init_pos[0]
+        self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
         # set target position
         box_target_pos = self.sample_context()
@@ -287,7 +290,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             1.22173047e00,
             7.85398126e-01])
         eps = 1e-5          # threshold for convergence
-        IT_MAX = 100
+        IT_MAX = 10
         dt = 1e-3
         i = 0
         pgain = [
