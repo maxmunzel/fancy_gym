@@ -43,7 +43,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self._episode_energy = 0.
         self.random_init = random_init
-        self.action_space = spaces.Box(low=-1, high=1, shape=(2,))
         MujocoEnv.__init__(self,
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "box_pushing.xml"),
                            frame_skip=self.frame_skip,
@@ -51,11 +50,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.reset_model()
 
     def step(self, action):
-        if len(action) > 2:
-            # handle gym magic
-            action=action[:2]
-
-        action = 10 * np.array(action)
+        action = 10 * np.array(action).flatten()
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
@@ -74,7 +69,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         unstable_simulation = False
 
         try:
-            self.do_simulation([0,0,0,0,0,0,0, action[0], action[1]], self.frame_skip)
+            self.do_simulation(action, self.frame_skip)
         except Exception as e:
             print(e)
             unstable_simulation = True
