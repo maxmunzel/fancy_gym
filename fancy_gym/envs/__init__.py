@@ -230,6 +230,31 @@ register(
     max_episode_steps=MAX_EPISODE_STEPS_BEERPONG,
 )
 
+# Max
+
+
+
+register(
+        id="BoxPushing2D",
+        entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+        kwargs={
+            "name": "BoxPushingDense-v0",
+            "wrappers": [mujoco.box_pushing.MPWrapper],
+            "trajectory_generator_kwargs": {
+                "trajectory_generator_type": "promp",
+                "action_dim": 2,
+                "weight_scale": 2,
+            },
+            "phase_generator_kwargs": {"phase_generator_type": "linear"},
+            "controller_kwargs": {"controller_type": "velocity"},
+            "basis_generator_kwargs": {
+                "basis_generator_type": "zero_rbf",
+                "num_basis": 5,
+                # 'num_basis_zero_start': 1,
+            }
+    }
+)
+
 # Box pushing environments with different rewards
 for reward_type in ["Dense", "TemporalSparse", "TemporalSpatialSparse"]:
     register(
