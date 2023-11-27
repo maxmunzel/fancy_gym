@@ -1,4 +1,7 @@
 import fancy_gym
+import numpy as np
+import gym
+from fancy_gym.envs.mujoco.box_pushing.mp_wrapper import MPWrapper
 
 
 def example_mp(env_name="HoleReacherProMP-v0", seed=1, iterations=1, render=True):
@@ -106,20 +109,21 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
     """
 
-    base_env_id = "Reacher5d-v0"
+    base_env_id = "BoxPushingDense-v0"
 
     # Replace this wrapper with the custom wrapper for your environment by inheriting from the RawInterfaceWrapper.
     # You can also add other gym.Wrappers in case they are needed.
-    wrappers = [fancy_gym.envs.mujoco.reacher.MPWrapper]
+    wrappers = [MPWrapper]
 
     # For a ProMP
     trajectory_generator_kwargs = {'trajectory_generator_type': 'promp',
+                              'action_dim': 2,
                                    'weight_scale': 2}
     phase_generator_kwargs = {'phase_generator_type': 'linear'}
     controller_kwargs = {'controller_type': 'velocity'}
     basis_generator_kwargs = {'basis_generator_type': 'zero_rbf',
                               'num_basis': 5,
-                              'num_basis_zero_start': 1
+                              # 'num_basis_zero_start': 1,
                               }
 
     # # For a DMP
@@ -135,12 +139,13 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
                             traj_gen_kwargs=trajectory_generator_kwargs, controller_kwargs=controller_kwargs,
                             phase_kwargs=phase_generator_kwargs, basis_kwargs=basis_generator_kwargs,
                             seed=seed)
-
-    if render:
-        env.render(mode="human")
+    # env = gym.make("BoxPushingDenseProMP-v0")
 
     rewards = 0
     obs = env.reset()
+
+    if render:
+        env.render(mode="human")
 
     # number of samples/full trajectories (multiple environment steps)
     for i in range(iterations):
@@ -155,22 +160,22 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
 
 if __name__ == '__main__':
-    render = False
-    # DMP
-    example_mp("HoleReacherDMP-v0", seed=10, iterations=5, render=render)
+    render = True
+    ## DMP
+    #example_mp("BoxPushingTemporalSparseProMP-v0", seed=10, iterations=5, render=render)
 
-    # ProMP
-    example_mp("HoleReacherProMP-v0", seed=10, iterations=5, render=render)
-    example_mp("BoxPushingTemporalSparseProMP-v0", seed=10, iterations=1, render=render)
-    example_mp("TableTennis4DProMP-v0", seed=10, iterations=20, render=render)
+    ## ProMP
+    #example_mp("HoleReacherProMP-v0", seed=10, iterations=5, render=render)
+    # example_mp("BoxPushingTemporalSparseProMP-v0", seed=10, iterations=10, render=render)
+    #example_mp("TableTennis4DProMP-v0", seed=10, iterations=20, render=render)
 
-    # ProDMP with Replanning
-    example_mp("BoxPushingDenseReplanProDMP-v0", seed=10, iterations=4, render=render)
-    example_mp("TableTennis4DReplanProDMP-v0", seed=10, iterations=20, render=render)
-    example_mp("TableTennisWindReplanProDMP-v0", seed=10, iterations=20, render=render)
+    ## ProDMP with Replanning
+    #example_mp("BoxPushingDenseReplanProDMP-v0", seed=10, iterations=4, render=render)
+    #example_mp("TableTennis4DReplanProDMP-v0", seed=10, iterations=20, render=render)
+    #example_mp("TableTennisWindReplanProDMP-v0", seed=10, iterations=20, render=render)
 
-    # Altered basis functions
-    obs1 = example_custom_mp("Reacher5dProMP-v0", seed=10, iterations=1, render=render)
+    ## Altered basis functions
+    #obs1 = example_custom_mp("Reacher5dProMP-v0", seed=10, iterations=1, render=render)
 
     # Custom MP
-    example_fully_custom_mp(seed=10, iterations=1, render=render)
+    example_fully_custom_mp(seed=10, iterations=10, render=render)

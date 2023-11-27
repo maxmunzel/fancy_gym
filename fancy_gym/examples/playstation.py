@@ -1,6 +1,6 @@
 import pygame
 import time
-from envs.mujoco.box_pushing.box_pushing_env import BoxPushingDense
+from fancy_gym.envs.mujoco.box_pushing.box_pushing_env import BoxPushingDense
 import fancy_gym
 
 # Initialize pygame and the joystick

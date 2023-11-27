@@ -43,6 +43,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         self._episode_energy = 0.
         self.random_init = random_init
+        self.start_tcp_pos = None
         MujocoEnv.__init__(self,
                            model_path=os.path.join(os.path.dirname(__file__), "assets", "box_pushing.xml"),
                            frame_skip=self.frame_skip,
@@ -50,7 +51,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.reset_model()
 
     def step(self, action):
-        action = 10 * np.array(action).flatten()
+        if self.start_tcp_pos is None:
+            self.start_tcp_pos = self.data.body("finger").xpos[:2].copy()
+
+        action = 2 * np.array(action).flatten() - self.start_tcp_pos
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
@@ -108,6 +112,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
+        self.start_tcp_pos = None
         # rest box to initial position
         self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
         box_init_pos = self.sample_context() if self.random_init else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
