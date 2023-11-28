@@ -17,7 +17,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     basis_generator_kwargs = {
         "basis_generator_type": "zero_rbf",
         "num_basis": 5,
-        # 'num_basis_zero_start': 1,
+        'num_basis_zero_start': 1,
     }
     env = fancy_gym.make_bb(
         env_id=base_env_id,
@@ -31,7 +31,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     )
 
     # This is the magic line
-    env = gym.make("BoxPushing2D")
+    env = gym.make("BoxPushing2D-3-ProDMP")
 
     env.reset()
 

@@ -231,7 +231,40 @@ register(
 )
 
 # Max
-
+#{
+#    "trajectory_generator_kwargs": {
+#        'trajectory_generator_type': 'prodmp',
+#        'weights_scale': 1.0,
+#    },
+#    "controller_kwargs": {
+#        'controller_type': 'motor', # TODO
+#        "p_gains": 1.0,
+#        "d_gains": 0.1,
+register(
+        id="BoxPushing2D-3-ProDMP",
+        entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+        kwargs={
+            "name": "BoxPushingDense-v0",
+            "wrappers": [mujoco.box_pushing.MPWrapper],
+            "trajectory_generator_kwargs": {
+                "trajectory_generator_type": "prodmp",
+                "duration": 2.0,
+                "action_dim": 2,
+                "weight_scale": 2,
+            },
+            "phase_generator_kwargs": {
+                'phase_generator_type': 'exp',
+                'tau': 1.5,
+            },
+            "controller_kwargs": {"controller_type": "velocity"},
+            "basis_generator_kwargs": {
+                'basis_generator_type': 'prodmp',
+                'alpha': 10,
+                "num_basis": 3,
+                # 'num_basis_zero_start': 1,
+            }
+    }
+)
 register(
         id="BoxPushing2D-3Pos",
         entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
