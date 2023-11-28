@@ -256,7 +256,7 @@ register(
                 'phase_generator_type': 'exp',
                 'tau': 1.5,
             },
-            "controller_kwargs": {"controller_type": "velocity"},
+            "controller_kwargs": {"controller_type": "motor"},
             "basis_generator_kwargs": {
                 'basis_generator_type': 'prodmp',
                 'alpha': 10,
