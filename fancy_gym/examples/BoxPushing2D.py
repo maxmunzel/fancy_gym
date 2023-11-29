@@ -31,7 +31,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     )
 
     # This is the magic line
-    env = gym.make("BoxPushing2D-3-ProDMP")
+    env = gym.make("BoxPushing2D-3-ProDMP-Replan")
 
     env.reset()
 
@@ -52,4 +52,4 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
 
 if __name__ == "__main__":
-    example_fully_custom_mp(seed=10, iterations=10, render=True)
+    example_fully_custom_mp(seed=10, iterations=100, render=True)
