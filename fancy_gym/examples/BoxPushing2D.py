@@ -31,7 +31,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     )
 
     # This is the magic line
-    env = gym.make("BoxPushing2D-3-ProDMP-Replan")
+    env = gym.make("ProDMP-Motor-Paper-BB-Random")
 
     env.reset()
 
