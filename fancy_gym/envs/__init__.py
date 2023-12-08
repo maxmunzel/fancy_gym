@@ -240,6 +240,71 @@ register(
 #        'controller_type': 'motor', # TODO
 #        "p_gains": 1.0,
 #        "d_gains": 0.1,
+
+
+
+DEFAULT_BB_DICT_ProDMP = {
+    "name": 'EnvName',
+    "wrappers": [],
+    "trajectory_generator_kwargs": {
+        'trajectory_generator_type': 'prodmp',
+        'duration': 2.0,
+        'weights_scale': 1.0,
+    },
+    "phase_generator_kwargs": {
+        'phase_generator_type': 'exp',
+        'tau': 1.5,
+    },
+    "controller_kwargs": {
+        'controller_type': 'motor',
+        "p_gains": 1.0,
+        "d_gains": 0.1,
+    },
+    "basis_generator_kwargs": {
+        'basis_generator_type': 'prodmp',
+        'alpha': 10,
+        'num_basis': 5,
+    },
+    "black_box_kwargs": {
+    }
+}
+
+i = -1
+for weight_scale in [1.0, 1.5, 2.0]:
+    for tau in [1.1,1.5,1.9]:
+        for controller_type in ["motor", "velocity"]:
+            for alpha in [5,10,20]:
+                for num_basis in [3,4,5]:
+                    i += 1
+                    register(
+                            id=f"ProDMP-BB-Random-Sweep-{i}",
+                            entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+                            kwargs={
+                                "name": "BoxPushingDense-v0",
+                                "wrappers": [mujoco.box_pushing.MPWrapper],
+                                "trajectory_generator_kwargs": {
+                                    "trajectory_generator_type": "prodmp",
+                                    "duration": 2.0,
+                                    "action_dim": 2,
+                                    "weight_scale": weight_scale,
+                                },
+                                "phase_generator_kwargs": {
+                                    'phase_generator_type': 'exp',
+                                    'tau': tau,
+                                },
+                                "controller_kwargs": {
+                                    "controller_type": controller_type,
+                                    },
+                                "basis_generator_kwargs": {
+                                    'basis_generator_type': 'prodmp',
+                                    'alpha': alpha,
+                                    "num_basis": num_basis,
+                                    # 'num_basis_zero_start': 1,
+                                },
+                                "random_init": True
+                            }
+                    )
+
 register(
         id="ProDMP-Motor-Paper-BB-Random",
         entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
