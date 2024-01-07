@@ -49,6 +49,6 @@ while True:
     # If the episode is done, reset the environment
     # if done:
     #    obs = env.reset()
-    # time.sleep(1/30)
+    time.sleep(1/20)
 
 pygame.quit()
