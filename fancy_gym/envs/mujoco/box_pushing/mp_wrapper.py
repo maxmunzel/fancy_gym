@@ -11,25 +11,29 @@ class MPWrapper(RawInterfaceWrapper):
     @property
     def context_mask(self):
         if self.random_init:
-            return np.hstack([
-                [True] * 7,  # joints position
+            return np.hstack(
+                [
+                    [True] * 7,  # joints position
+                    [False] * 7,  # joints velocity
+                    [True] * 3,  # position of box
+                    [True] * 4,  # orientation of box
+                    [True] * 3,  # position of target
+                    [True] * 4,  # orientation of target
+                    # [True] * 1,  # time
+                ]
+            )
+
+        return np.hstack(
+            [
+                [False] * 7,  # joints position
                 [False] * 7,  # joints velocity
-                [True] * 3,  # position of box
-                [True] * 4,  # orientation of box
+                [False] * 3,  # position of box
+                [False] * 4,  # orientation of box
                 [True] * 3,  # position of target
                 [True] * 4,  # orientation of target
                 # [True] * 1,  # time
-            ])
-
-        return np.hstack([
-            [False] * 7,  # joints position
-            [False] * 7,  # joints velocity
-            [False] * 3,  # position of box
-            [False] * 4,  # orientation of box
-            [True] * 3,  # position of target
-            [True] * 4,  # orientation of target
-            # [True] * 1,  # time
-        ])
+            ]
+        )
 
     @property
     def current_pos(self) -> Union[float, int, np.ndarray, Tuple]:
@@ -38,4 +42,3 @@ class MPWrapper(RawInterfaceWrapper):
     @property
     def current_vel(self) -> Union[float, int, np.ndarray, Tuple]:
         return self.data.qvel[-2:].copy()
-

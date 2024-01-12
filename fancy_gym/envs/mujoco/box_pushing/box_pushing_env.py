@@ -11,6 +11,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     rot_to_quat,
     get_quaternion_error,
     rotation_distance,
+    affine_matrix_to_xpos_and_xquat,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_max,
@@ -140,6 +141,19 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         qpos = self.data.qpos[:7].copy()
         qvel = self.data.qvel[:7].copy()
 
+        if redis_connection is not None:
+            res = redis_connection.xrevrange("box_tracking", "+", "-", count=1)
+            if res:
+                _, payload = res[0]  # type: ignore
+                transform = json.loads(payload["transform"])
+                transform = np.array(transform).reshape(4, 4)
+                box_pos, box_quat = affine_matrix_to_xpos_and_xquat(transform)
+                i = mujoco.mj_name2id(self.model, 1, "mocap_box")
+                self.model.body_pos[i] = box_pos.copy()
+                self.model.body_quat[i] = box_quat.copy()
+                # get rid of box
+                self.data.body("box_0").xpos[2] = -0.5
+
         if not unstable_simulation:
             reward = self._get_reward(
                 episode_end,
@@ -186,6 +200,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if self.random_init
             else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
         )
+        if redis_connection is not None:
+            # get the box out of the way during real rollouts
+            box_init_pos[2] = -0.5
+
         self.data.joint("box_joint").qpos = box_init_pos
         self.data.joint("finger_x_joint").qpos = box_init_pos[0]
         self.data.joint("finger_y_joint").qpos = box_init_pos[1]
