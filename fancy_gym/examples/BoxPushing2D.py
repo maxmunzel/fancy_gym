@@ -32,7 +32,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
     # This is the magic line
     for i in range(162):
-        env = gym.make(f"ProDMP-BB-Random-Sweep-{i}")
+        env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
 
     env.reset()
 

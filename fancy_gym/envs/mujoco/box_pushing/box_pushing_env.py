@@ -47,7 +47,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
@@ -101,7 +101,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         redis_connection.xadd("cart_cmd", payload)
 
     def step(self, action):
-        action = 10 * np.array(action).flatten()
+        action = 1 * np.array(action).flatten()
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055

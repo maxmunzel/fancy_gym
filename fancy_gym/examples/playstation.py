@@ -3,6 +3,7 @@ import numpy as np
 import time
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_env import BoxPushingDense
 import fancy_gym
+import os
 
 FPS = 40
 dt = BoxPushingDense().dt
@@ -41,7 +42,7 @@ while True:
     # Here, I assume the environment expects a 2D action.
     # Adjust this as per the action space of your environment.
     action = np.array([y_axis, x_axis])
-    action *= 0.5
+    action *= 1
 
     # print(action)
 
@@ -51,7 +52,10 @@ while True:
     cum_reward += reward
 
     # Render the environment
-    if not frame % 20:
+    if "REDIS_IP" in os.environ:
+        if not frame % 20:
+            env.render(mode="human")
+    else:
         env.render(mode="human")
 
     # print(f"Reward: {cum_reward:3.2f} vel: {env.data.qpos[:7]}")
@@ -63,7 +67,7 @@ while True:
 
     if error > 0:
         time.sleep(error)
-    if abs(error) > 10:
+    if "REDIS_IP" in os.environ and abs(error) > 10:
         # we don't want the simulation to catch up to the real time,
         # because this could cause exessively fast movements
         print("Error, simulation lagging behind!")
