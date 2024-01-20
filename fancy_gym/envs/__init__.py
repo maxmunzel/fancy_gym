@@ -271,40 +271,42 @@ DEFAULT_BB_DICT_ProDMP = {
 
 
 i = -1
-for weight_scale in [1.0, 1.5, 2.0]:
+for weight_scale in [.1, .3, 1.]:
     for tau in [1.1,1.5,1.9]:
         for alpha in [5,10,20]:
-            for num_basis in [3,4,5]:
+            for num_basis in [3]:
                 for duration in [2.0,4.0]:
-                    i += 1
-                    register(
-                            id=f"ProDMP-BB-Random-Sweep-PosCtrl-{i}",
-                            entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
-                            kwargs={
-                                "name": "BoxPushingDense-v0",
-                                "wrappers": [mujoco.box_pushing.MPWrapper],
-                                "trajectory_generator_kwargs": {
-                                    "trajectory_generator_type": "prodmp",
-                                    "duration": duration,
-                                    "action_dim": 2,
-                                    "weight_scale": weight_scale,
-                                },
-                                "phase_generator_kwargs": {
-                                    'phase_generator_type': 'exp',
-                                    'tau': tau,
-                                },
-                                "controller_kwargs": {
-                                    "controller_type": "position",
+                    for auto_scale_basis in [True, False]:
+                        i += 1
+                        register(
+                                id=f"ProDMP-BB-Random-Sweep-PosCtrl-{i}",
+                                entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+                                kwargs={
+                                    "name": "BoxPushingDense-v0",
+                                    "wrappers": [mujoco.box_pushing.MPWrapper],
+                                    "trajectory_generator_kwargs": {
+                                        "trajectory_generator_type": "prodmp",
+                                        "duration": duration,
+                                        "action_dim": 2,
+                                        "weight_scale": weight_scale,
+                                        "auto_scale_basis": auto_scale_basis,
                                     },
-                                "basis_generator_kwargs": {
-                                    'basis_generator_type': 'prodmp',
-                                    'alpha': alpha,
-                                    "num_basis": num_basis,
-                                    # 'num_basis_zero_start': 1,
-                                },
-                                "random_init": True
-                            }
-                    )
+                                    "phase_generator_kwargs": {
+                                        'phase_generator_type': 'exp',
+                                        'tau': tau,
+                                    },
+                                    "controller_kwargs": {
+                                        "controller_type": "position",
+                                        },
+                                    "basis_generator_kwargs": {
+                                        'basis_generator_type': 'prodmp',
+                                        'alpha': alpha,
+                                        "num_basis": num_basis,
+                                        # 'num_basis_zero_start': 1,
+                                    },
+                                    "random_init": True
+                                }
+                        )
 
 i = -1
 for weight_scale in [1.0, 1.5, 2.0]:
