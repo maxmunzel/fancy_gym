@@ -271,15 +271,15 @@ DEFAULT_BB_DICT_ProDMP = {
 
 
 i = -1
-for weight_scale in [.1, .3, 1.]:
-    for tau in [1.1,1.5,1.9]:
+for weight_scale in [.1, .3]:
+    for tau in [0.3, 0.5, 1.1]:
         for alpha in [5,10,20]:
             for num_basis in [3]:
                 for duration in [2.0,4.0]:
-                    for auto_scale_basis in [True, False]:
+                    for auto_scale_basis in [True]:
                         i += 1
                         register(
-                                id=f"ProDMP-BB-Random-Sweep-PosCtrl-{i}",
+                                id=f"Sweep7-{i}",
                                 entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
                                 kwargs={
                                     "name": "BoxPushingDense-v0",
