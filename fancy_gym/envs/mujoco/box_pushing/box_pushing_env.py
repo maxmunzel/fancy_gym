@@ -20,7 +20,8 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_torque_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import NamedTuple
+from typing import NamedTuple, Tuple, List
+import random
 
 import mujoco
 
@@ -32,6 +33,33 @@ if "REDIS_IP" in os.environ:
     redis_connection = redis.Redis(os.environ["REDIS_IP"], decode_responses=True)
 else:
     redis_connection = None
+
+
+Vec2 = Tuple[float, float]
+
+
+class Trace(NamedTuple):
+    goal_pos: Vec2
+    finger_traj: List[Vec2]
+    box_traj: List[Vec2]
+
+    def save(self, plot_name: str = None):
+        target_dir = os.environ.get("PLOT_DIR", None)
+        if target_dir is None or not self.finger_traj:
+            return
+        plot_name = plot_name or str(random.randint(0, 99999999))
+        import matplotlib.pyplot as plt
+
+        fig, ax = plt.subplots()
+        ax.scatter([self.goal_pos[0]], [self.goal_pos[1]], label="Goal")
+
+        finger = np.array(self.finger_traj)
+        box = np.array(self.box_traj)
+
+        ax.plot(finger[:, 0], finger[:, 1], label="Finger")
+        ax.plot(box[:, 0], box[:, 1], label="Box")
+        fig.legend()
+        fig.savefig(f"{target_dir}/{plot_name}.png")
 
 
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
@@ -49,6 +77,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
+        self.trace = None
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
             [
@@ -102,6 +131,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def step(self, action):
         action = 1 * np.array(action).flatten()
+        if self.trace is not None:
+            # self.trace.finger_traj.append(tuple(action))
+            self.trace.box_traj.append(tuple(self.data.body("finger").xpos[:2].copy()))
+            self.trace.finger_traj.append(
+                tuple(self.data.body("box_0").xpos[:2].copy())
+            )
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
@@ -193,6 +228,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
+        if self.trace is not None:
+            self.trace.save()
         # rest box to initial position
         self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
         box_init_pos = (
@@ -212,6 +249,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         box_target_pos = self.sample_context()
         while np.linalg.norm(box_target_pos[:2] - box_init_pos[:2]) < 0.3:
             box_target_pos = self.sample_context()
+        self.trace = Trace(
+            goal_pos=tuple(box_target_pos[:2]), finger_traj=[], box_traj=[]
+        )
         # box_target_pos[0] = 0.4
         # box_target_pos[1] = -0.3
         # box_target_pos[-4:] = np.array([0.0, 0.0, 0.0, 1.0])
