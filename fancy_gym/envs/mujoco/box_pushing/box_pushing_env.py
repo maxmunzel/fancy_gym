@@ -51,6 +51,8 @@ class Trace(NamedTuple):
         import matplotlib.pyplot as plt
 
         fig, ax = plt.subplots()
+        ax.set_xlim(-1, 1)
+        ax.set_ylim(-1, 1)
         ax.scatter([self.goal_pos[0]], [self.goal_pos[1]], label="Goal")
 
         finger = np.array(self.finger_traj)
@@ -60,6 +62,7 @@ class Trace(NamedTuple):
         ax.plot(box[:, 0], box[:, 1], label="Box")
         fig.legend()
         fig.savefig(f"{target_dir}/{plot_name}.png")
+        plt.close()
 
 
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
