@@ -252,6 +252,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         box_target_pos = self.sample_context()
         while np.linalg.norm(box_target_pos[:2] - box_init_pos[:2]) < 0.3:
             box_target_pos = self.sample_context()
+
+        # Derandomize
+        self.data.body("replan_target_pos").xquat = box_target_pos = np.array(
+            [0.51505285, 0.0, 0.0, 0.85715842]
+        )
+        self.data.body("replan_target_pos").xpos = np.array(
+            [0.3186036, -0.25776725, -0.01]
+        )
+
         self.trace = Trace(
             goal_pos=tuple(box_target_pos[:2]), finger_traj=[], box_traj=[]
         )

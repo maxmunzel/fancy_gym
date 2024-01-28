@@ -18,8 +18,8 @@ joystick = pygame.joystick.Joystick(0)  # Assume the PS4 controller is joystick 
 joystick.init()
 
 # Setup OpenAI Gym environment
-env = BoxPushingDense(random_init=True, frame_skip=skip)
-env = fancy_gym.make("BoxPushingDense-v0", seed=42)
+env = BoxPushingDense(random_init=False, frame_skip=skip)
+# env = fancy_gym.make("BoxPushingDense-v0", seed=42)
 obs = env.reset()
 
 cum_reward = 0
@@ -56,17 +56,19 @@ while True:
         if not frame % 20:
             env.render(mode="human")
     else:
-        env.render(mode="human")
+        if not frame % 4:
+            env.render(mode="human")
 
     # print(f"Reward: {cum_reward:3.2f} vel: {env.data.qpos[:7]}")
 
     # keep simulation running in approximate real time
     t_real = time.time() - start_time
-    t_sim = frame / FPS
+    t_sim = frame * dt
     error = t_sim - t_real
 
     if error > 0:
-        time.sleep(error)
+        pass
+        # time.sleep(error)
     if "REDIS_IP" in os.environ and abs(error) > 10:
         # we don't want the simulation to catch up to the real time,
         # because this could cause exessively fast movements

@@ -269,6 +269,56 @@ DEFAULT_BB_DICT_ProDMP = {
 }
 # Max
 
+# TODO: iterate over 3 seeds
+# TODO: Remove all randomness
+# TODO: Remove rot term
+# tau defaults to duration, but there is also a phase generatro "learn_tau" option: https://github.com/ALRhub/fancy_gym/blob/aa652e3610c4a5ec72be43064d883e35d49994aa/fancy_gym/utils/make_env_helpers.py#L117
+i = -1
+for weight_scale in [.1, .3, .05]:
+        for alpha in [5,10,20]:
+            for num_basis in [3]:
+                for duration in [4.0]:
+                    for auto_scale_basis in [True]:
+                        for disable_goal in [True, False]:
+                            for goal_scale in [.1, .3, .05]:
+                                for relative_goal in [True, False]:
+                                    if disable_goal and (goal_scale or relative_goal):
+                                        continue
+                                    i += 1
+                                    register(
+                                            id=f"Sweep9-{i}",
+                                            entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+                                            kwargs={
+                                                "name": "BoxPushingDense-v0",
+                                                "wrappers": [mujoco.box_pushing.MPWrapper],
+                                                "trajectory_generator_kwargs": {
+                                                    "trajectory_generator_type": "prodmp",
+                                                    "duration": duration,
+                                                    "action_dim": 2,
+                                                    "weight_scale": weight_scale,
+                                                    "auto_scale_basis": auto_scale_basis,
+                                                    "goal_scale": goal_scale,
+                                                    "relative_goal": relative_goal,
+                                                    "disable_goal": disable_goal,
+                                                },
+                                                "phase_generator_kwargs": {
+                                                    'phase_generator_type': 'exp',
+                                                    'tau': None,
+                                                },
+                                                "controller_kwargs": {
+                                                    "controller_type": "position",
+                                                    },
+                                                "basis_generator_kwargs": {
+                                                    'basis_generator_type': 'prodmp',
+                                                    'alpha': alpha,
+                                                    "num_basis": num_basis,
+                                                    # 'num_basis_zero_start': 1,
+                                                },
+                                                "random_init": False 
+                                            }
+                                    )
+print(f"Sweep9 has {i+1} configs")
+
 
 i = -1
 for weight_scale in [.1, .3, 1]:
