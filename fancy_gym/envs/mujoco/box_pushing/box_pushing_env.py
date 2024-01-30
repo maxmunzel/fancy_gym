@@ -258,7 +258,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             [0.51505285, 0.0, 0.0, 0.85715842]
         )
         self.data.body("replan_target_pos").xpos = np.array(
-            [0.3186036, -0.25776725, -0.01]
+            [0.3186036 + 0.15, -0.25776725, -0.01]
         )
 
         self.trace = Trace(
@@ -555,7 +555,7 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = -0.02 * np.sum(np.square(action))
+        energy_cost = 0 # -0.02 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )

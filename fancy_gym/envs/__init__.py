@@ -269,7 +269,56 @@ DEFAULT_BB_DICT_ProDMP = {
 }
 # Max
 i = -1
+# Sweep14 -- The best configs of Sweep12/13, with both learning params, without the broken energy cost, TemporalSparse, more seeds and 36h.
+# We're also randomizing the start position
+for weight_scale in [.1, .3, 1]:
+    for tau in [0.5, 1.1]:
+        for alpha in [5,10,20]:
+            for num_basis in [3]:
+                for duration in [4.0]:
+                    for auto_scale_basis in [True, False]:
+                        for disable_goal in [True, False]:
+                            for goal_scale in [.1, .3, 1]:
+                                for relative_goal in [True, False]:
+                                    if disable_goal and (goal_scale or relative_goal):
+                                        continue
+                                    i += 1
+                                    register(
+                                            id=f"Sweep14-{i}",
+                                            entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+                                            kwargs={
+                                                "name": "BoxPushingTemporalSparse-v0",
+                                                "wrappers": [mujoco.box_pushing.MPWrapper],
+                                                "trajectory_generator_kwargs": {
+                                                    "trajectory_generator_type": "prodmp",
+                                                    "duration": duration,
+                                                    "action_dim": 2,
+                                                    "weight_scale": weight_scale,
+                                                    "auto_scale_basis": auto_scale_basis,
+                                                    "goal_scale": goal_scale,
+                                                    "relative_goal": relative_goal,
+                                                    "disable_goal": disable_goal,
+                                                },
+                                                "phase_generator_kwargs": {
+                                                    'phase_generator_type': 'exp',
+                                                    'tau': tau,
+                                                },
+                                                "controller_kwargs": {
+                                                    "controller_type": "position",
+                                                    },
+                                                "basis_generator_kwargs": {
+                                                    'basis_generator_type': 'prodmp',
+                                                    'alpha': alpha,
+                                                    "num_basis": num_basis,
+                                                    # 'num_basis_zero_start': 1,
+                                                },
+                                                "random_init": True
+                                            }
+                                    )
+print(f"Sweep14 has {i+1} configs")
+i = -1
 # Sweep 12 -- the best MPs of Sweep 8 on a derandomized env
+# Sweep 13 -- the best MPs of Sweep 12 with the BoxPushing2D-3Pos learning parameters
 for weight_scale in [.1, .3, 1]:
     for tau in [0.5, 1.1]:
         for alpha in [5,10,20]:
@@ -314,7 +363,7 @@ for weight_scale in [.1, .3, 1]:
                                                 "random_init": False
                                             }
                                     )
-print(f"Sweep8 has {i+1} configs")
+print(f"Sweep12 has {i+1} configs")
 
 # TODO: iterate over 3 seeds
 # TODO: Remove all randomness

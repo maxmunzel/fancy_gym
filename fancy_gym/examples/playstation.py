@@ -18,7 +18,7 @@ joystick = pygame.joystick.Joystick(0)  # Assume the PS4 controller is joystick 
 joystick.init()
 
 # Setup OpenAI Gym environment
-env = BoxPushingDense(random_init=False, frame_skip=skip)
+env = BoxPushingDense(random_init=True, frame_skip=skip)
 # env = fancy_gym.make("BoxPushingDense-v0", seed=42)
 obs = env.reset()
 
