@@ -1,5 +1,6 @@
 import os
 
+import time
 import json
 import redis
 import random
@@ -124,15 +125,37 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         self.reset_model()
 
+    def check_mocap(self):
+        if redis_connection is not None:
+            res = redis_connection.xrevrange("box_tracking", "+", "-", count=1)
+            if res:
+                _, payload = res[0]  # type: ignore
+                transform = json.loads(payload["transform"])
+                transform = np.array(transform).reshape(4, 4)
+                box_pos, box_quat = affine_matrix_to_xpos_and_xquat(transform)
+                i = mujoco.mj_name2id(self.model, 1, "mocap_box")
+                self.model.body_pos[i] = box_pos.copy()
+                self.model.body_quat[i] = box_quat.copy()
+                # get rid of box
+                self.data.body("box_0").xpos[2] = -0.5
+
     def push_to_redis(self):
         assert redis_connection is not None
         q = json.dumps(list(self.data.qpos.copy()))
         v = json.dumps(list(self.data.qvel.copy()))
         x, y, _ = self.data.body("finger").xpos.copy()
-        payload = {"x": x, "y": y, "q": q, "v": v, "session": self.session}
+        payload = {
+            "x": x,
+            "y": y,
+            "q": q,
+            "v": v,
+            "session": self.session,
+            "cmd": "GOTO",
+        }
         redis_connection.xadd("cart_cmd", payload)
 
     def step(self, action):
+        # time.sleep(1 / 30)
         action = 1 * np.array(action).flatten()
         if self.trace is not None:
             # self.trace.finger_traj.append(tuple(action))
@@ -179,18 +202,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         qpos = self.data.qpos[:7].copy()
         qvel = self.data.qvel[:7].copy()
 
-        if redis_connection is not None:
-            res = redis_connection.xrevrange("box_tracking", "+", "-", count=1)
-            if res:
-                _, payload = res[0]  # type: ignore
-                transform = json.loads(payload["transform"])
-                transform = np.array(transform).reshape(4, 4)
-                box_pos, box_quat = affine_matrix_to_xpos_and_xquat(transform)
-                i = mujoco.mj_name2id(self.model, 1, "mocap_box")
-                self.model.body_pos[i] = box_pos.copy()
-                self.model.body_quat[i] = box_quat.copy()
-                # get rid of box
-                self.data.body("box_0").xpos[2] = -0.5
+        self.check_mocap()
 
         if not unstable_simulation:
             reward = self._get_reward(
@@ -227,6 +239,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         }
         if redis_connection is not None:
             self.push_to_redis()
+        print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
 
         return obs, reward, episode_end, infos
 
@@ -243,10 +256,32 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         if redis_connection is not None:
             # get the box out of the way during real rollouts
             box_init_pos[2] = -0.5
+            redis_connection.xadd("cart_cmd", {"cmd": "RESET"})
+            print("Waiting for robot to reset")
+            messages = redis_connection.xread(
+                streams={"real_robot_obs": "$"}, count=1, block=0
+            )
+            assert messages
+            message_id, payload = messages[0][1][-1]
+            x = float(payload["x"])
+            y = float(payload["y"])
+            # self.data.body("finger").xpos[0] = x
+            # self.data.body("finger").xpos[1] = y
+            self.data.joint("finger_x_joint").qpos = x
+            self.data.joint("finger_y_joint").qpos = y
 
-        self.data.joint("box_joint").qpos = box_init_pos
-        self.data.joint("finger_x_joint").qpos = box_init_pos[0]
-        self.data.joint("finger_y_joint").qpos = box_init_pos[1]
+            # self.data.qpos[mujoco.mj_name2id("finger_x_joint")] = x
+            # self.data.qpos[mujoco.mj_name2id("finger_y_joint")] = y
+            # self.data.joint("finger_x_joint").qpos = float(payload["x"])
+            # self.data.joint("finger_y_joint").qpos = float(payload["y"])
+            print("Waiting for mocap")
+            self.check_mocap()
+            print(f"Reset done, finger @ {x:.2f} {y:.2f}")
+
+        else:
+            self.data.joint("box_joint").qpos = box_init_pos
+            self.data.joint("finger_x_joint").qpos = box_init_pos[0]
+            self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
         # set target position
         box_target_pos = self.sample_context()
@@ -555,7 +590,7 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = 0 # -0.02 * np.sum(np.square(action))
+        energy_cost = 0  # -0.02 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )
