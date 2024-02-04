@@ -78,10 +78,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     2. time-depend sparse reward
     3. time-spatial-depend sparse reward
     """
+        
 
-    def __init__(self, frame_skip: int = 10, random_init: bool = True):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True, ):
         utils.EzPickle.__init__(**locals())
         self.trace = None
+        self.old_qpos = None
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
             [
@@ -124,6 +126,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             mujoco_bindings="mujoco",
         )
         self.reset_model()
+
 
     def check_mocap(self):
         if redis_connection is not None:
@@ -219,6 +222,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             )
         else:
             reward = -50
+
+        # calculate power cost
+        qpos = self.data.qpos[:7].copy() * 10 
+        if self.old_qpos is None:
+            self.old_qpos = qpos
+        reward += np.linalg.norm(qpos - self.old_qpos)**2  
+        self.old_qpos = qpos.copy()
 
         obs = self._get_obs()
         box_goal_pos_dist = (
