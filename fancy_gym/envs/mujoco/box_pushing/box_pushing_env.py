@@ -227,7 +227,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         qpos = self.data.qpos[:7].copy() * 10 
         if self.old_qpos is None:
             self.old_qpos = qpos
-        reward += np.linalg.norm(qpos - self.old_qpos)**2  
+        reward -= np.linalg.norm(qpos - self.old_qpos)**2  
         self.old_qpos = qpos.copy()
 
         obs = self._get_obs()
