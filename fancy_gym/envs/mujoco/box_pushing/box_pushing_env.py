@@ -227,7 +227,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         qpos = self.data.qpos[:7].copy() * 10 
         if self.old_qpos is None:
             self.old_qpos = qpos
-        reward -= np.linalg.norm(qpos - self.old_qpos)**2  
+        reward -= 0.1 * np.linalg.norm(qpos - self.old_qpos)**2  
         self.old_qpos = qpos.copy()
 
         obs = self._get_obs()
@@ -560,7 +560,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         )
         box_goal_pos_dist_reward = -3.5 * np.linalg.norm(box_pos - target_pos)
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
-        energy_cost = -0.0005 * np.sum(np.square(action))
+        energy_cost = 0# -0.0005 * np.sum(np.square(action))
 
         reward = (
             joint_penalty
@@ -650,7 +650,7 @@ class BoxPushingTemporalSpatialSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = -0.02 * np.sum(np.square(action))
+        energy_cost = 0 #-0.02 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )
@@ -699,7 +699,7 @@ class BoxPushingTemporalSpatialSparse2(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = -0.0005 * np.sum(np.square(action))
+        energy_cost = 0 #-0.0005 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )
@@ -754,7 +754,7 @@ class BoxPushingNoConstraintSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = -0.0005 * np.sum(np.square(action))
+        energy_cost = 0# -0.0005 * np.sum(np.square(action))
         reward += joint_penalty + energy_cost
 
         if not episode_end:
