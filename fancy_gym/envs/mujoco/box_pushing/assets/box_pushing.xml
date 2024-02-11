@@ -57,6 +57,6 @@
 
   <include file="kit_lab_surrounding.xml" />
   <include file="panda_rod.xml" />
-  <include file="push_box.xml" />
+  <include file="push_box_rand.xml" />
   <include file="finger.xml" />
 </mujoco>

@@ -5,6 +5,7 @@ import json
 import redis
 import random
 import numpy as np
+from pathlib import Path
 from gym import utils, spaces
 from copy import deepcopy
 from gym.envs.mujoco import MujocoEnv
@@ -128,15 +129,17 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.reset_model()
 
     def randomize(self):
-        old = 'rgba="0 1 0 0.5"'
-        new = f'rgba="{random.random()} {random.random()}  {random.random()}  0.5"'
-        new_model = self.model_path.replace(".xml", "_rand.xml")
+        old = 'mass="0.5308"'
+        new = f'mass="{self.np_random.uniform(0.2, 0.8):.3f}"'
 
-        with open(self.model_path) as f_src:
-            with open(new_model, "w") as f_dst:
+        push_box = str(Path(self.model_path).parent / "push_box.xml")
+        new_push_box = push_box.replace(".xml", "_rand.xml")
+
+        with open(push_box) as f_src:
+            with open(new_push_box, "w") as f_dst:
                 f_dst.write(f_src.read().replace(old, new))
 
-        self.model = self._mujoco_bindings.MjModel.from_xml_path(new_model)
+        self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
         self.data = self._mujoco_bindings.MjData(self.model)
 
         if self.viewer:
