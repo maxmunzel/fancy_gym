@@ -30,9 +30,10 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
         seed=seed,
     )
 
-    # This is the magic line
-    for i in range(162):
-        env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
+    # # This is the magic line
+    # for i in range(162):
+    #     env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
+    env = gym.make("Sweep16-85")
 
     env.reset()
 
