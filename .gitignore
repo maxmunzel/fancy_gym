@@ -1,3 +1,6 @@
+# randomized mujoco files
+*_rand.xml
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]

@@ -78,9 +78,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     2. time-depend sparse reward
     3. time-spatial-depend sparse reward
     """
-        
 
-    def __init__(self, frame_skip: int = 10, random_init: bool = True, ):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True):
         utils.EzPickle.__init__(**locals())
         self.trace = None
         self.old_qpos = None
@@ -117,16 +116,33 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self._episode_energy = 0.0
         self.random_init = random_init
         self.session = random.randint(0, 99999999)
+        self.model_path = os.path.join(
+            os.path.dirname(__file__), "assets", "box_pushing.xml"
+        )
         MujocoEnv.__init__(
             self,
-            model_path=os.path.join(
-                os.path.dirname(__file__), "assets", "box_pushing.xml"
-            ),
+            model_path=self.model_path,
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
         )
         self.reset_model()
 
+    def randomize(self):
+        old = 'rgba="0 1 0 0.5"'
+        new = f'rgba="{random.random()} {random.random()}  {random.random()}  0.5"'
+        new_model = self.model_path.replace(".xml", "_rand.xml")
+
+        with open(self.model_path) as f_src:
+            with open(new_model, "w") as f_dst:
+                f_dst.write(f_src.read().replace(old, new))
+
+        self.model = self._mujoco_bindings.MjModel.from_xml_path(new_model)
+        self.data = self._mujoco_bindings.MjData(self.model)
+
+        if self.viewer:
+            # update viewer, so rendering keeps working
+            self.viewer.model = self.model
+            self.viewer.data = self.data
 
     def check_mocap(self):
         if redis_connection is not None:
@@ -224,10 +240,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             reward = -50
 
         # calculate power cost
-        qpos = self.data.qpos[:7].copy() * 10 
+        qpos = self.data.qpos[:7].copy() * 10
         if self.old_qpos is None:
             self.old_qpos = qpos
-        reward -= 0.01 * np.linalg.norm(qpos - self.old_qpos)**2  
+        reward -= 0.01 * np.linalg.norm(qpos - self.old_qpos) ** 2
         self.old_qpos = qpos.copy()
 
         obs = self._get_obs()
@@ -254,6 +270,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
+        self.randomize()
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
@@ -560,7 +577,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         )
         box_goal_pos_dist_reward = -3.5 * np.linalg.norm(box_pos - target_pos)
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
-        energy_cost = 0# -0.0005 * np.sum(np.square(action))
+        energy_cost = 0  # -0.0005 * np.sum(np.square(action))
 
         reward = (
             joint_penalty
@@ -650,7 +667,7 @@ class BoxPushingTemporalSpatialSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = 0 #-0.02 * np.sum(np.square(action))
+        energy_cost = 0  # -0.02 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )
@@ -699,7 +716,7 @@ class BoxPushingTemporalSpatialSparse2(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = 0 #-0.0005 * np.sum(np.square(action))
+        energy_cost = 0  # -0.0005 * np.sum(np.square(action))
         tcp_box_dist_reward = -2 * np.clip(
             np.linalg.norm(box_pos - rod_tip_pos), 0.05, 100
         )
@@ -754,7 +771,7 @@ class BoxPushingNoConstraintSparse(BoxPushingEnvBase):
         joint_penalty = self._joint_limit_violate_penalty(
             qpos, qvel, enable_pos_limit=True, enable_vel_limit=True
         )
-        energy_cost = 0# -0.0005 * np.sum(np.square(action))
+        energy_cost = 0  # -0.0005 * np.sum(np.square(action))
         reward += joint_penalty + energy_cost
 
         if not episode_end:
