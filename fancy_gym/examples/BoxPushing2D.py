@@ -1,6 +1,7 @@
 import fancy_gym
 import numpy as np
 import gym
+import sys
 from fancy_gym.envs.mujoco.box_pushing.mp_wrapper import MPWrapper
 
 
@@ -33,7 +34,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     # # This is the magic line
     # for i in range(162):
     #     env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
-    env = gym.make("Sweep16-85")
+    env = gym.make("Sweep17-85")
 
     env.reset()
 
@@ -45,6 +46,8 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     for _ in range(iterations):
         ac = env.action_space.sample()
         _, reward, done, _ = env.step(ac)
+        env.env.env.traj_gen.show_scaled_basis(plot=True)
+        sys.exit(0)
         rewards += reward
 
         if done:
