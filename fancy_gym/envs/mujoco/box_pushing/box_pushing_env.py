@@ -1,4 +1,5 @@
 import os
+import sys
 import shutil
 import tempfile
 import time
@@ -133,8 +134,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def randomize(self):
         assets = Path(self.model_path).parent
         TMPDIR = os.environ.get("TMPDIR")
+        print(f"TMPDIR: {TMPDIR}", file=sys.stderr)
 
-        with tempfile.TemporaryDirectory(prefix=TMPDIR) as d:
+        with tempfile.TemporaryDirectory(
+            prefix=TMPDIR + "/", suffix=str(random.randint(0, 9999999))
+        ) as d:
             d = shutil.copytree(assets, f"{d}/assets")
             with open(f"{d}/push_box.xml") as f_src:
                 content = f_src.read()
@@ -265,9 +269,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             "box_goal_pos_dist": box_goal_pos_dist,
             "box_goal_rot_dist": box_goal_quat_dist,
             "episode_energy": 0.0 if not episode_end else self._episode_energy,
-            "is_success": True
-            if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
-            else False,
+            "is_success": (
+                True
+                if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
+                else False
+            ),
             "num_steps": self._steps,
         }
         if redis_connection is not None:
