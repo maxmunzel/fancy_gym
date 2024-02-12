@@ -1,5 +1,6 @@
 import os
-
+import shutil
+import tempfile
 import time
 import json
 import redis
@@ -126,21 +127,24 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
         )
+        self.randomize()
         self.reset_model()
 
     def randomize(self):
-        old = 'mass="0.5308"'
-        new = f'mass="{self.np_random.uniform(0.2, 0.8):.3f}"'
+        assets = Path(self.model_path).parent
+        TMPDIR = os.environ.get("TMPDIR")
 
-        push_box = str(Path(self.model_path).parent / "push_box.xml")
-        new_push_box = push_box.replace(".xml", "_rand.xml")
+        with tempfile.TemporaryDirectory(prefix=TMPDIR) as d:
+            d = shutil.copytree(assets, f"{d}/assets")
+            with open(f"{d}/push_box.xml") as f_src:
+                content = f_src.read()
+            with open(f"{d}/push_box.xml", "w") as f_dst:
+                old = 'mass="0.5308"'
+                new = f'mass="{self.np_random.uniform(0.2, 0.8):.3f}"'
+                f_dst.write(content.replace(old, new))
 
-        with open(push_box) as f_src:
-            with open(new_push_box, "w") as f_dst:
-                f_dst.write(f_src.read().replace(old, new))
-
-        self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
-        self.data = self._mujoco_bindings.MjData(self.model)
+            self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
+            self.data = self._mujoco_bindings.MjData(self.model)
 
         if self.viewer:
             # update viewer, so rendering keeps working
