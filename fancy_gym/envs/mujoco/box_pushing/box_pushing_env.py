@@ -145,7 +145,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             with open(f"{d}/push_box.xml", "w") as f_dst:
                 old = 'friction="0.3'
                 assert old in content
-                new = f'friction="{self.np_random.uniform(0.1, 0.5):.3f}'
+                new = f'friction="{self.np_random.uniform(0.2, 0.4):.3f}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
