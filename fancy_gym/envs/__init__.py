@@ -268,8 +268,71 @@ DEFAULT_BB_DICT_ProDMP = {
     }
 }
 # Max
+register(
+    id=f"Sweep19-85-3",
+    entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+    kwargs={
+        "name": "BoxPushingTemporalSparse-v0",
+        "wrappers": [mujoco.box_pushing.MPWrapper],
+        "trajectory_generator_kwargs": {
+            "trajectory_generator_type": "prodmp",
+            "duration": 4.0,
+            "action_dim": 2,
+            "weight_scale": 0.1,
+            "auto_scale_basis": True,
+            "goal_scale": 0.3,
+            "relative_goal": False,
+            "disable_goal": False,
+        },
+        "phase_generator_kwargs": {
+            'phase_generator_type': 'exp',
+            'tau': 2.5,
+        },
+        "controller_kwargs": {
+            "controller_type": "position",
+            },
+        "basis_generator_kwargs": {
+            'basis_generator_type': 'prodmp',
+            'alpha': 10,
+            "num_basis": 3,
+            # 'num_basis_zero_start': 1,
+        },
+        "random_init": True,
+    }
+)
+register(
+    id=f"Sweep19-27",
+    entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+    kwargs={
+        "name": "BoxPushingTemporalSparse-v0",
+        "wrappers": [mujoco.box_pushing.MPWrapper],
+        "trajectory_generator_kwargs": {
+            "trajectory_generator_type": "prodmp",
+            "duration": 4.0,
+            "action_dim": 2,
+            "weight_scale": 0.3,
+            "auto_scale_basis": True,
+            "goal_scale": 0.1,
+            "relative_goal": False,
+            "disable_goal": False,
+        },
+        "phase_generator_kwargs": {
+            'phase_generator_type': 'exp',
+            'tau': 2.5,
+        },
+        "controller_kwargs": {
+            "controller_type": "position",
+            },
+        "basis_generator_kwargs": {
+            'basis_generator_type': 'prodmp',
+            'alpha': 10,
+            "num_basis": 3,
+            # 'num_basis_zero_start': 1,
+        },
+        "random_init": True,
+    }
+)
 
-sweep17_tau = 1.4
 for sweep17_tau in [1.3, 1.4, 1.5, 1.6]:
     register(
         id=f"Sweep17-85-tau{sweep17_tau}",
