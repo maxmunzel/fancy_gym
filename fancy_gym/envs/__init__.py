@@ -269,7 +269,7 @@ DEFAULT_BB_DICT_ProDMP = {
 }
 # Max
 register(
-    id=f"Sweep19-85-3",
+    id=f"Sweep19-85",
     entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
     kwargs={
         "name": "BoxPushingTemporalSparse-v0",
