@@ -141,7 +141,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         self.doraemon = Doraemon(
             dist=dist,
-            k=10,
+            k=100,
             kl_bound=0.1,
             target_success_rate=0.9,
         )
