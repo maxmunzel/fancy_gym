@@ -75,6 +75,5 @@ while True:
         print("Error, simulation lagging behind!")
         break
 
-    print(error)
 
 pygame.quit()

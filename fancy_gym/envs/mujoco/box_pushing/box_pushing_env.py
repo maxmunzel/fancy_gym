@@ -26,7 +26,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
 from typing import NamedTuple, Tuple, List
 import random
-
+from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 200
@@ -83,6 +83,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
+        self.doraemon = None
         utils.EzPickle.__init__(**locals())
         self.trace = None
         self.old_qpos = None
@@ -128,10 +129,27 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
         )
+        dist = MultivariateBetaDistribution(
+            alphas=[10, 10, 10],
+            low=[-0.45, 0.30, 0],
+            high=[0.45, 0.60, 2 * np.pi],
+            names=[
+                "start_y",
+                "start_x",
+                "start_theta",
+            ],
+        )
+        self.doraemon = Doraemon(
+            dist=dist,
+            k=10,
+            kl_bound=0.1,
+            target_success_rate=0.9,
+        )
         self.randomize()
         self.reset_model()
 
     def randomize(self):
+        self.sample, self.sample_dict = self.doraemon.dist.sample_dict()
         assets = Path(self.model_path).parent
         TMPDIR = os.environ.get("TMPDIR")
         print(f"TMPDIR: {TMPDIR}", file=sys.stderr)
@@ -145,7 +163,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             with open(f"{d}/push_box.xml", "w") as f_dst:
                 old = 'friction="0.3'
                 assert old in content
-                new = f'friction="{self.np_random.uniform(0.2, 0.4):.3f}'
+                new = f'friction="{0.3}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
@@ -265,26 +283,41 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         box_goal_quat_dist = (
             0.0 if not episode_end else rotation_distance(box_quat, target_quat)
         )
+        is_success = (
+            True
+            if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
+            else False
+        )
         infos = {
             "episode_end": episode_end,
             "box_goal_pos_dist": box_goal_pos_dist,
             "box_goal_rot_dist": box_goal_quat_dist,
             "episode_energy": 0.0 if not episode_end else self._episode_energy,
-            "is_success": (
-                True
-                if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
-                else False
-            ),
+            "is_success": is_success,
             "num_steps": self._steps,
+            "doraemon_entropy": self.doraemon.dist.entropy()
+            if self.doraemon is not None
+            else 0,
         }
         if redis_connection is not None:
             self.push_to_redis()
-        print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
+        # print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
+        self.last_episode_successful = is_success
 
         return obs, reward, episode_end, infos
 
     def reset_model(self):
         self.randomize()
+        if self.doraemon is not None:
+            self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
+            self.doraemon.update_dist()
+            params = {
+                k: f"{v:.4f}"
+                for k, v in zip(
+                    self.doraemon.dist.names, self.doraemon.dist.get_params()
+                )
+            }
+            print(f"New dist: {params}")
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
@@ -326,12 +359,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         # set target position
         box_target_pos = self.sample_context()
-        while np.linalg.norm(box_target_pos[:2] - box_init_pos[:2]) < 0.3:
-            box_target_pos = self.sample_context()
+        # while np.linalg.norm(box_target_pos[:2] - box_init_pos[:2]) < 0.3:
+        #    box_target_pos = self.sample_context()
 
         # Derandomize
         self.data.body("replan_target_pos").xquat = box_target_pos = np.array(
-            [0.51505285, 0.0, 0.0, 0.85715842]
+            [0.51505285, 0.0, 0.0, 0]
+            # [0.51505285, 0.0, 0.0, 0.85715842]
         )
         self.data.body("replan_target_pos").xpos = np.array(
             [0.3186036 + 0.15, -0.25776725, -0.01]
@@ -364,7 +398,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def sample_context(self):
         pos = self.np_random.uniform(low=BOX_POS_BOUND[0], high=BOX_POS_BOUND[1])
-        theta = self.np_random.uniform(low=0, high=np.pi * 2)
+        pos[0] = self.sample_dict["start_x"]
+        pos[1] = self.sample_dict["start_y"]
+        theta = self.sample_dict["start_theta"]
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
         return np.concatenate([pos, quat])
 
