@@ -29,7 +29,7 @@ import random
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 200
+MAX_EPISODE_STEPS_BOX_PUSHING = 100
 
 BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
 
