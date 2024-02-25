@@ -130,20 +130,22 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             mujoco_bindings="mujoco",
         )
         dist = MultivariateBetaDistribution(
-            alphas=[10, 10, 10],
-            low=[-0.45, 0.30, 0],
-            high=[0.45, 0.60, 2 * np.pi],
+            alphas=[20, 20, 20, 20],
+            low=[-0.45, 0.30, 0, 0.7],
+            high=[0.45, 0.60, 2 * np.pi, 1.3],
             names=[
                 "start_y",
                 "start_x",
                 "start_theta",
+                "box_mass_factor",
             ],
+            seed=self.np_random.integers(0, 9999999),
         )
         self.doraemon = Doraemon(
             dist=dist,
-            k=100,
-            kl_bound=0.1,
-            target_success_rate=0.9,
+            k=200,
+            kl_bound=0.2,
+            target_success_rate=0.5,
         )
         self.randomize()
         self.reset_model()
@@ -161,9 +163,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             with open(f"{d}/push_box.xml") as f_src:
                 content = f_src.read()
             with open(f"{d}/push_box.xml", "w") as f_dst:
-                old = 'friction="0.3'
+                # old = 'friction="0.3'
+                old = 'mass="0.5308'
                 assert old in content
-                new = f'friction="{0.3}'
+                new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
@@ -288,17 +291,26 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
             else False
         )
-        infos = {
-            "episode_end": episode_end,
-            "box_goal_pos_dist": box_goal_pos_dist,
-            "box_goal_rot_dist": box_goal_quat_dist,
-            "episode_energy": 0.0 if not episode_end else self._episode_energy,
-            "is_success": is_success,
-            "num_steps": self._steps,
-            "doraemon_entropy": self.doraemon.dist.entropy()
-            if self.doraemon is not None
-            else 0,
-        }
+        if self.doraemon is None:
+            infos = {}
+        else:
+            doraemon_params = {
+                f"doraemon_param_{k}": v
+                for k, v in zip(
+                    self.doraemon.dist.names, self.doraemon.dist.get_params()
+                )
+            }
+            infos = {
+                "episode_end": episode_end,
+                "box_goal_pos_dist": box_goal_pos_dist,
+                "box_goal_rot_dist": box_goal_quat_dist,
+                "episode_energy": 0.0 if not episode_end else self._episode_energy,
+                "is_success": is_success,
+                "num_steps": self._steps,
+                "doraemon_entropy": self.doraemon.dist.entropy(),
+            }
+            infos.update(doraemon_params)
+
         if redis_connection is not None:
             self.push_to_redis()
         # print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
