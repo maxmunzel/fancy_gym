@@ -130,9 +130,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             mujoco_bindings="mujoco",
         )
         dist = MultivariateBetaDistribution(
-            alphas=[20, 20, 20, 20],
+            alphas=[20, 20, 20, 50],
+            # alphas=[1, 1, 1, 100],
             low=[-0.45, 0.30, 0, 0.7],
             high=[0.45, 0.60, 2 * np.pi, 1.3],
+            param_bound=[20, 20, 20, 50],
             names=[
                 "start_y",
                 "start_x",
@@ -141,12 +143,16 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             ],
             seed=self.np_random.integers(0, 9999999),
         )
+        if redis_connection is not None:
+            dist.set_params(np.ones_like(dist.get_params()))
         self.doraemon = Doraemon(
             dist=dist,
             k=200,
             kl_bound=0.2,
-            target_success_rate=0.5,
+            target_success_rate=0.4,
         )
+        # make it a little simpler for me to write the ymls
+        print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
         self.randomize()
         self.reset_model()
 
@@ -154,7 +160,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.sample, self.sample_dict = self.doraemon.dist.sample_dict()
         assets = Path(self.model_path).parent
         TMPDIR = os.environ.get("TMPDIR")
-        print(f"TMPDIR: {TMPDIR}", file=sys.stderr)
 
         with tempfile.TemporaryDirectory(
             prefix=TMPDIR + "/", suffix=str(random.randint(0, 9999999))
@@ -294,12 +299,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         if self.doraemon is None:
             infos = {}
         else:
-            doraemon_params = {
-                f"doraemon_param_{k}": v
-                for k, v in zip(
-                    self.doraemon.dist.names, self.doraemon.dist.get_params()
-                )
-            }
             infos = {
                 "episode_end": episode_end,
                 "box_goal_pos_dist": box_goal_pos_dist,
@@ -307,13 +306,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "episode_energy": 0.0 if not episode_end else self._episode_energy,
                 "is_success": is_success,
                 "num_steps": self._steps,
-                "doraemon_entropy": self.doraemon.dist.entropy(),
             }
-            infos.update(doraemon_params)
+            infos.update(self.doraemon.param_dict())
 
         if redis_connection is not None:
             self.push_to_redis()
-        # print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
         self.last_episode_successful = is_success
 
         return obs, reward, episode_end, infos
@@ -329,7 +326,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                     self.doraemon.dist.names, self.doraemon.dist.get_params()
                 )
             }
-            print(f"New dist: {params}")
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
