@@ -130,11 +130,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             mujoco_bindings="mujoco",
         )
         dist = MultivariateBetaDistribution(
-            alphas=[20, 20, 20, 50],
+            alphas=[1, 1, 1, 50],
             # alphas=[1, 1, 1, 100],
             low=[-0.45, 0.30, 0, 0.7],
             high=[0.45, 0.60, 2 * np.pi, 1.3],
-            param_bound=[20, 20, 20, 50],
+            param_bound=[1, 1, 1, 50],
             names=[
                 "start_y",
                 "start_x",
@@ -149,7 +149,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dist=dist,
             k=200,
             kl_bound=0.2,
-            target_success_rate=0.4,
+            target_success_rate=0.9,
         )
         # make it a little simpler for me to write the ymls
         print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
