@@ -29,7 +29,7 @@ import random
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 100
+MAX_EPISODE_STEPS_BOX_PUSHING = 200
 
 BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
 
@@ -319,7 +319,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            self.doraemon.update_dist()
+            # self.doraemon.update_dist()
             params = {
                 k: f"{v:.4f}"
                 for k, v in zip(
