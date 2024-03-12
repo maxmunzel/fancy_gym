@@ -24,7 +24,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_torque_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import NamedTuple, Tuple, List
+from typing import NamedTuple, Tuple, List, Optional
 import random
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
@@ -315,17 +315,22 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         return obs, reward, episode_end, infos
 
+    def reset(
+        self,
+        *,
+        seed: Optional[int] = None,
+        options: Optional[dict] = None,
+    ) -> Tuple[np.ndarray, dict]:
+        ret = super(BoxPushingEnvBase, self).reset(seed=seed, options=options)
+        if self.doraemon:
+            self.doraemon.dist.random = self.np_random
+        return ret
+
     def reset_model(self):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
             # self.doraemon.update_dist()
-            params = {
-                k: f"{v:.4f}"
-                for k, v in zip(
-                    self.doraemon.dist.names, self.doraemon.dist.get_params()
-                )
-            }
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position

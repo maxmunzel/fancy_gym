@@ -20,7 +20,7 @@ joystick.init()
 # Setup OpenAI Gym environment
 env = BoxPushingDense(random_init=True, frame_skip=skip)
 # env = fancy_gym.make("BoxPushingDense-v0", seed=42)
-obs = env.reset()
+obs = env.reset(seed=42)
 
 cum_reward = 0
 start_time = time.time()
