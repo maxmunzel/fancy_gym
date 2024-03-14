@@ -82,6 +82,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
+    action_space = spaces.Box(low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35]))
+
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
@@ -381,7 +383,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # [0.51505285, 0.0, 0.0, 0.85715842]
         )
         self.data.body("replan_target_pos").xpos = np.array(
-            [0.3186036 + 0.15, -0.25776725, -0.01]
+            # [0.3186036 + 0.15, -0.25776725, -0.01]
+            [0.4, 0, -0.01]
         )
 
         self.trace = Trace(
