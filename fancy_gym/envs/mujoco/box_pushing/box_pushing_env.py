@@ -31,7 +31,7 @@ import mujoco
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 200
 
-BOX_POS_BOUND = np.array([[0.3, -0.45, -0.01], [0.6, 0.45, -0.01]])
+BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
 if "REDIS_IP" in os.environ:
     redis_connection = redis.Redis(os.environ["REDIS_IP"], decode_responses=True)
@@ -134,8 +134,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1],
             # alphas=[1, 1, 1, 100],
-            low=[-0.45, 0.30, 0, 0.7],
-            high=[0.45, 0.60, 2 * np.pi, 1.3],
+            low=[-0.35, 0.22, 0, 0.7],
+            high=[0.35, 0.58, 2 * np.pi, 1.3],
             param_bound=[1, 1, 1, 10],
             names=[
                 "start_y",
