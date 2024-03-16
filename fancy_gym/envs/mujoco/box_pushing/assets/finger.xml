@@ -9,8 +9,8 @@
 
 </worldbody>
   <actuator>
-        <position kp="20" ctrllimited="true" ctrlrange="0.32 0.58" forcelimited="true" forcerange="-12 12" joint="finger_x_joint" name="finger_x_actuator" />
-        <position kp="20" ctrllimited="true" ctrlrange="-0.43 0.43" forcelimited="true" forcerange="-12 12" joint="finger_y_joint" name="finger_y_actuator" />
+        <position kp="20" ctrllimited="true" ctrlrange="0.22 0.58" forcelimited="true" forcerange="-12 12" joint="finger_x_joint" name="finger_x_actuator" />
+        <position kp="20" ctrllimited="true" ctrlrange="-0.35 0.35" forcelimited="true" forcerange="-12 12" joint="finger_y_joint" name="finger_y_actuator" />
         <!--
         <motor ctrllimited="true" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" joint="finger_x_joint" name="finger_x_actuator" />
         <motor ctrllimited="true" ctrlrange="-10 10" forcelimited="true" forcerange="-10 10" joint="finger_y_joint" name="finger_y_actuator" />
