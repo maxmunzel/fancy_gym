@@ -197,6 +197,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.model.body_quat[i] = box_quat.copy()
                 # get rid of box
                 self.data.body("box_0").xpos[2] = -0.5
+                return box_pos, box_quat
 
     def push_to_redis(self):
         assert redis_connection is not None
@@ -252,8 +253,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         episode_end = True if self._steps >= MAX_EPISODE_STEPS_BOX_PUSHING else False
 
-        box_pos = self.data.body("box_0").xpos.copy()
-        box_quat = self.data.body("box_0").xquat.copy()
+
+        if redis_connection is not None:
+            box_pos, box_quat = self.check_mocap()
+        else:
+            box_pos = self.data.body("box_0").xpos.copy()
+            box_quat = self.data.body("box_0").xquat.copy()
         target_pos = self.data.body("replan_target_pos").xpos.copy()
         target_quat = self.data.body("replan_target_pos").xquat.copy()
         rod_tip_pos = self.data.site("rod_tip").xpos.copy()
@@ -311,9 +316,19 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             }
             infos.update(self.doraemon.param_dict())
 
+        self.last_episode_successful = is_success
+
+        print(target_pos)
+
         if redis_connection is not None:
             self.push_to_redis()
-        self.last_episode_successful = is_success
+            if episode_end:
+                feedback = {k: float(v) for k, v in infos.items()}
+                feedback["reward"] = reward
+                feedback["is_success"] = int(feedback["is_success"]) # redis has no bools
+                del feedback["episode_end"]
+                redis_connection.xadd("episode_feedback", feedback)
+        print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
 
         return obs, reward, episode_end, infos
 
