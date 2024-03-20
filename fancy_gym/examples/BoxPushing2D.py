@@ -51,8 +51,9 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
         # ac = env.action_space.sample()
         _, reward, done, _ = env.step(ac)
         env.reset()
-    env.env.env.traj_gen.show_scaled_basis(plot=True)
-    sys.exit(0)
+        #env.env.env.traj_gen.show_scaled_basis(plot=True)
+        #sys.exit(0)
+        rewards += reward
 
 
 
