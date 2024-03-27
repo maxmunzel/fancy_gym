@@ -11,6 +11,7 @@ from pathlib import Path
 from gym import utils, spaces
 from copy import deepcopy
 from gym.envs.mujoco import MujocoEnv
+from fancy_gym.envs.mujoco.box_pushing.throttle import Throttle
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     rot_to_quat,
     get_quaternion_error,
@@ -29,7 +30,7 @@ import random
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 200
+MAX_EPISODE_STEPS_BOX_PUSHING = 400
 
 BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
@@ -85,6 +86,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     action_space = spaces.Box(low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35]))
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
+        self.throttle = None
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
         self.trace = None
@@ -215,6 +217,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         redis_connection.xadd("cart_cmd", payload)
 
     def step(self, action):
+        if redis_connection is not None:
+            if self.throttle is None:
+                self.throttle = Throttle(target_hz=1/self.dt, busy_wait=False)
+            self.throttle.tick()
         # time.sleep(1 / 30)
         action = 1 * np.array(action).flatten()
         if self.trace is not None:
@@ -344,6 +350,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return ret
 
     def reset_model(self):
+        self.throttle = None # clear throttle so target time does not persist resets
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)

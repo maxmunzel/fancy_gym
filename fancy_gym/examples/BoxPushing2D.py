@@ -35,7 +35,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     # # This is the magic line
     # for i in range(162):
     #     env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
-    env = gym.make("Sweep38")
+    env = gym.make("Sweep45")
 
     env.reset()
 
@@ -46,7 +46,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     rewards = 0
     env.env.env.traj_gen.show_scaled_basis(plot=True)
     for _ in range(iterations):
-        ac =  spaces.Box(low=np.array([ 0.15, -0.35]*6), high=np.array([0.55, 0.35]*6)).sample()
+        ac =  spaces.Box(low=np.array([ 0.15, -0.35]*5), high=np.array([0.55, 0.35]*5)).sample()
         ac[-2:] = [0.4, 0]
         # ac = env.action_space.sample()
         _, reward, done, _ = env.step(ac)

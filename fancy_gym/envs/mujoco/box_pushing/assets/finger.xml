@@ -3,8 +3,8 @@
     <body name="finger" pos="0 0 .08">
       <geom conaffinity="0" condim="4" contype="8" type="cylinder" size="0.01 0.15" pos="0 0 0.075" mass="1.0"/>
       <site name="finger_tip" type="box" rgba="0 0 1 1." size="0.01 0.01 0.01" pos="0 0 0.2"/>
-      <joint name="finger_x_joint" type="slide" pos="0 0 0" axis="1 0 0" limited="true" range=".20 .60" damping="7"/>
-      <joint name="finger_y_joint" type="slide" pos="0 0 0" axis="0 1 0" limited="true" range="-.37 0.37" damping="7"/>
+      <joint name="finger_x_joint" type="slide" pos="0 0 0" axis="1 0 0" limited="true" range=".20 .60" damping="15"/>
+      <joint name="finger_y_joint" type="slide" pos="0 0 0" axis="0 1 0" limited="true" range="-.37 0.37" damping="15"/>
     </body>
 
 </worldbody>

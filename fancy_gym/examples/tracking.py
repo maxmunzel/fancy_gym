@@ -8,12 +8,14 @@ import json
 
 
 def main(redis_ip: str = "localhost"):
-    r = redis.Redis(host=redis_ip)
     env = BoxPushingDense(random_init=True, frame_skip=20)
     env = fancy_gym.make("BoxPushingDense-v0", seed=42)
     env.reset()
     action = [0, 0]
-    env.step(action)
+    while True:
+        env.step(action)
+        env.render(mode="human")
+        time.sleep(1 / 30)
 
     while True:
         res = r.xrevrange("cart_cmd", "+", "-", count=1)
