@@ -40,36 +40,6 @@ else:
     redis_connection = None
 
 
-Vec2 = Tuple[float, float]
-
-
-class Trace(NamedTuple):
-    goal_pos: Vec2
-    finger_traj: List[Vec2]
-    box_traj: List[Vec2]
-
-    def save(self, plot_name: str = None):
-        target_dir = os.environ.get("PLOT_DIR", None)
-        if target_dir is None or not self.finger_traj:
-            return
-        plot_name = plot_name or str(random.randint(0, 99999999))
-        import matplotlib.pyplot as plt
-
-        fig, ax = plt.subplots()
-        ax.set_xlim(-1, 1)
-        ax.set_ylim(-1, 1)
-        ax.scatter([self.goal_pos[0]], [self.goal_pos[1]], label="Goal")
-
-        finger = np.array(self.finger_traj)
-        box = np.array(self.box_traj)
-
-        ax.plot(finger[:, 0], finger[:, 1], label="Finger")
-        ax.plot(box[:, 0], box[:, 1], label="Box")
-        fig.legend()
-        fig.savefig(f"{target_dir}/{plot_name}.png")
-        plt.close()
-
-
 class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
     franka box pushing environment
@@ -86,6 +56,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     action_space = spaces.Box(low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35]))
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
+        self.start_x = 0.3
+        self.start_y = 0
         self.throttle = None
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
@@ -133,31 +105,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
         )
-        dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1],
-            # alphas=[1, 1, 1, 100],
-            low=[-0.35, 0.22, 0, 0.7],
-            high=[0.35, 0.58, 2 * np.pi, 1.3],
-            param_bound=[1, 1, 1, 10],
-            names=[
-                "start_y",
-                "start_x",
-                "start_theta",
-                "box_mass_factor",
-            ],
-            seed=self.np_random.integers(0, 9999999),
-        )
-        if redis_connection is not None:
-            dist.set_params(np.ones_like(dist.get_params()))
-        self.doraemon = Doraemon(
-            dist=dist,
-            k=200,
-            kl_bound=0.2,
-            target_success_rate=0.9,
-        )
-        # make it a little simpler for me to write the ymls
-        print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
-        self.randomize()
         self.reset_model()
 
     def randomize(self):
@@ -186,49 +133,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             self.viewer.model = self.model
             self.viewer.data = self.data
 
-    def check_mocap(self):
-        if redis_connection is not None:
-            res = redis_connection.xrevrange("box_tracking", "+", "-", count=1)
-            if res:
-                _, payload = res[0]  # type: ignore
-                transform = json.loads(payload["transform"])
-                transform = np.array(transform).reshape(4, 4)
-                box_pos, box_quat = affine_matrix_to_xpos_and_xquat(transform)
-                i = mujoco.mj_name2id(self.model, 1, "mocap_box")
-                self.model.body_pos[i] = box_pos.copy()
-                self.model.body_quat[i] = box_quat.copy()
-                # get rid of box
-                self.data.body("box_0").xpos[2] = -0.5
-                return box_pos, box_quat
-
-    def push_to_redis(self):
-        assert redis_connection is not None
-        q = json.dumps(list(self.data.qpos.copy()))
-        v = json.dumps(list(self.data.qvel.copy()))
-        x, y, _ = self.data.body("finger").xpos.copy()
-        payload = {
-            "x": x,
-            "y": y,
-            "q": q,
-            "v": v,
-            "session": self.session,
-            "cmd": "GOTO",
-        }
-        redis_connection.xadd("cart_cmd", payload)
-
     def step(self, action):
-        if redis_connection is not None:
-            if self.throttle is None:
-                self.throttle = Throttle(target_hz=1/self.dt, busy_wait=False)
-            self.throttle.tick()
-        # time.sleep(1 / 30)
         action = 1 * np.array(action).flatten()
-        if self.trace is not None:
-            # self.trace.finger_traj.append(tuple(action))
-            self.trace.box_traj.append(tuple(self.data.body("finger").xpos[:2].copy()))
-            self.trace.finger_traj.append(
-                tuple(self.data.body("box_0").xpos[:2].copy())
-            )
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
@@ -259,20 +165,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         episode_end = True if self._steps >= MAX_EPISODE_STEPS_BOX_PUSHING else False
 
-
-        if redis_connection is not None:
-            box_pos, box_quat = self.check_mocap()
-        else:
-            box_pos = self.data.body("box_0").xpos.copy()
-            box_quat = self.data.body("box_0").xquat.copy()
+        box_pos = self.data.body("box_0").xpos.copy()
+        box_quat = self.data.body("box_0").xquat.copy()
         target_pos = self.data.body("replan_target_pos").xpos.copy()
         target_quat = self.data.body("replan_target_pos").xquat.copy()
         rod_tip_pos = self.data.site("rod_tip").xpos.copy()
         rod_quat = self.data.body("push_rod").xquat.copy()
         qpos = self.data.qpos[:7].copy()
         qvel = self.data.qvel[:7].copy()
-
-        self.check_mocap()
 
         if not unstable_simulation:
             reward = self._get_reward(
@@ -326,14 +226,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         print(target_pos)
 
-        if redis_connection is not None:
-            self.push_to_redis()
-            if episode_end:
-                feedback = {k: float(v) for k, v in infos.items()}
-                feedback["reward"] = reward
-                feedback["is_success"] = int(feedback["is_success"]) # redis has no bools
-                del feedback["episode_end"]
-                redis_connection.xadd("episode_feedback", feedback)
         print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
 
         return obs, reward, episode_end, infos
@@ -345,54 +237,18 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         options: Optional[dict] = None,
     ) -> Tuple[np.ndarray, dict]:
         ret = super(BoxPushingEnvBase, self).reset(seed=seed, options=options)
-        if self.doraemon:
-            self.doraemon.dist.random = self.np_random
         return ret
 
     def reset_model(self):
-        self.throttle = None # clear throttle so target time does not persist resets
-        self.randomize()
-        if self.doraemon is not None:
-            self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            # self.doraemon.update_dist()
-        if self.trace is not None:
-            self.trace.save()
-        # rest box to initial position
         self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
         box_init_pos = (
             self.sample_context()
             if self.random_init
             else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
         )
-        if redis_connection is not None:
-            # get the box out of the way during real rollouts
-            box_init_pos[2] = -0.5
-            redis_connection.xadd("cart_cmd", {"cmd": "RESET"})
-            print("Waiting for robot to reset")
-            messages = redis_connection.xread(
-                streams={"real_robot_obs": "$"}, count=1, block=0
-            )
-            assert messages
-            message_id, payload = messages[0][1][-1]
-            x = float(payload["x"])
-            y = float(payload["y"])
-            # self.data.body("finger").xpos[0] = x
-            # self.data.body("finger").xpos[1] = y
-            self.data.joint("finger_x_joint").qpos = x
-            self.data.joint("finger_y_joint").qpos = y
-
-            # self.data.qpos[mujoco.mj_name2id("finger_x_joint")] = x
-            # self.data.qpos[mujoco.mj_name2id("finger_y_joint")] = y
-            # self.data.joint("finger_x_joint").qpos = float(payload["x"])
-            # self.data.joint("finger_y_joint").qpos = float(payload["y"])
-            print("Waiting for mocap")
-            self.check_mocap()
-            print(f"Reset done, finger @ {x:.2f} {y:.2f}")
-
-        else:
-            self.data.joint("box_joint").qpos = box_init_pos
-            self.data.joint("finger_x_joint").qpos = box_init_pos[0]
-            self.data.joint("finger_y_joint").qpos = box_init_pos[1]
+        self.data.joint("box_joint").qpos = box_init_pos
+        self.data.joint("finger_x_joint").qpos = box_init_pos[0]
+        self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
         # set target position
         box_target_pos = self.sample_context()
@@ -409,9 +265,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             [0.4, 0, -0.01]
         )
 
-        self.trace = Trace(
-            goal_pos=tuple(box_target_pos[:2]), finger_traj=[], box_traj=[]
-        )
         # box_target_pos[0] = 0.4
         # box_target_pos[1] = -0.3
         # box_target_pos[-4:] = np.array([0.0, 0.0, 0.0, 1.0])
@@ -434,11 +287,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         return self._get_obs()
 
+    def set_start_point(self, x: float, y: float):
+        self.start_x = x
+        self.start_y = y
+
     def sample_context(self):
         pos = self.np_random.uniform(low=BOX_POS_BOUND[0], high=BOX_POS_BOUND[1])
-        pos[0] = self.sample_dict["start_x"]
-        pos[1] = self.sample_dict["start_y"]
-        theta = self.sample_dict["start_theta"]
+        pos[0] = self.start_x
+        pos[1] = self.start_y
+        theta = 0
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
         return np.concatenate([pos, quat])
 
