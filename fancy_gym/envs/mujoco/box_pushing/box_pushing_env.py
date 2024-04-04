@@ -219,7 +219,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def step(self, action):
         if redis_connection is not None:
             if self.throttle is None:
-                self.throttle = Throttle(target_hz=1/self.dt, busy_wait=False)
+                self.throttle = Throttle(target_hz=1 / self.dt, busy_wait=False)
             self.throttle.tick()
         # time.sleep(1 / 30)
         action = 1 * np.array(action).flatten()
@@ -255,10 +255,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             unstable_simulation = True
 
         self._steps += 1
-        self._episode_energy += np.sum(np.square(action))
 
         episode_end = True if self._steps >= MAX_EPISODE_STEPS_BOX_PUSHING else False
-
 
         if redis_connection is not None:
             box_pos, box_quat = self.check_mocap()
@@ -292,10 +290,21 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         # calculate power cost
         qpos = self.data.qpos[:7].copy() * 10
+
         if self.old_qpos is None:
             self.old_qpos = qpos
         reward -= 0.01 * np.linalg.norm(qpos - self.old_qpos) ** 2
+
+        qvel = self.old_qpos - qpos
+
         self.old_qpos = qpos.copy()
+        self._episode_energy += np.sum(np.linalg.norm(qvel) ** 2)
+
+        speed = np.tanh(np.linalg.norm(qvel) ** 2 * 1000)
+        print(speed)
+
+        if episode_end:
+            reward -= 20 * speed
 
         obs = self._get_obs()
         box_goal_pos_dist = (
@@ -319,6 +328,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "episode_energy": 0.0 if not episode_end else self._episode_energy,
                 "is_success": is_success,
                 "num_steps": self._steps,
+                "end_speed": speed,
             }
             infos.update(self.doraemon.param_dict())
 
@@ -331,7 +341,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if episode_end:
                 feedback = {k: float(v) for k, v in infos.items()}
                 feedback["reward"] = reward
-                feedback["is_success"] = int(feedback["is_success"]) # redis has no bools
+                feedback["is_success"] = int(
+                    feedback["is_success"]
+                )  # redis has no bools
                 del feedback["episode_end"]
                 redis_connection.xadd("episode_feedback", feedback)
         print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}")
@@ -350,7 +362,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return ret
 
     def reset_model(self):
-        self.throttle = None # clear throttle so target time does not persist resets
+        self.throttle = None  # clear throttle so target time does not persist resets
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
