@@ -25,7 +25,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_torque_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import NamedTuple, Tuple, List, Optional
+from typing import NamedTuple, Tuple, List, Optional, Dict
 import random
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
@@ -64,6 +64,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.trace = None
         self.old_qpos = None
         self._steps = 0
+        self.replacements_by_file: Dict[str, List[Tuple[str, str]]] = {}
         self.init_qpos_box_pushing = np.array(
             [
                 0.0,
@@ -108,7 +109,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.reset_model()
 
     def randomize(self):
-        self.sample, self.sample_dict = self.doraemon.dist.sample_dict()
         assets = Path(self.model_path).parent
         TMPDIR = os.environ.get("TMPDIR")
 
@@ -116,16 +116,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             prefix=TMPDIR + "/", suffix=str(random.randint(0, 9999999))
         ) as d:
             d = shutil.copytree(assets, f"{d}/assets")
-            with open(f"{d}/push_box.xml") as f_src:
-                content = f_src.read()
-            with open(f"{d}/push_box.xml", "w") as f_dst:
-                # old = 'friction="0.3'
-                old = 'mass="0.5308'
-                assert old in content
-                new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
-                f_dst.write(content.replace(old, new))
+            for filename, replacements in self.replacements_by_file.items():
+                for old, new in replacements:
+                    with open(f"{d}/{filename}") as f_src:
+                        content = f_src.read()
+                    with open(f"{d}/{filename}", "w") as f_dst:
+                        assert old in content
+                        f_dst.write(content.replace(old, new))
 
-            self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
+            self.model = self._mujoco_bindings.MjModel.from_xml_path(f"/{d}/box_pushing.xml")
             self.data = self._mujoco_bindings.MjData(self.model)
 
         if self.viewer:
