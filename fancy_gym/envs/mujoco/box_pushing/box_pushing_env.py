@@ -104,17 +104,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             mujoco_bindings="mujoco",
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1],
+            alphas=[1, 1, 1, 1, 10],
             # alphas=[1, 1, 1, 100],
-            low=[-0.35, 0.22, 0, 0.7],
-            high=[0.35, 0.58, 2 * np.pi, 1.3],
-            param_bound=[1, 1, 1, 10],
-            names=[
-                "start_y",
-                "start_x",
-                "start_theta",
-                "box_mass_factor",
-            ],
+            low=[-0.35, 0.22, 0, 0.7, 70],
+            high=[0.35, 0.58, 2 * np.pi, 1.3, 200],
+            param_bound=[1, 1, 1, 10, 10],
+            names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
         )
         if redis_connection is not None:
@@ -139,10 +134,17 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             prefix=TMPDIR + "/", suffix=str(random.randint(0, 9999999))
         ) as d:
             d = shutil.copytree(assets, f"{d}/assets")
+            with open(f"{d}/finger.xml") as f_src:
+                content = f_src.read()
+            with open(f"{d}/finger.xml", "w") as f_dst:
+                old = 'kp="200'
+                assert old in content
+                new = f'kp="{self.sample_dict["kp"]}'
+                f_dst.write(content.replace(old, new))
+
             with open(f"{d}/push_box.xml") as f_src:
                 content = f_src.read()
             with open(f"{d}/push_box.xml", "w") as f_dst:
-                # old = 'friction="0.3'
                 old = 'mass="0.5308'
                 assert old in content
                 new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
@@ -323,7 +325,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            # self.doraemon.update_dist()
+            self.doraemon.update_dist()
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
