@@ -124,7 +124,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                         assert old in content
                         f_dst.write(content.replace(old, new))
 
-            self.model = self._mujoco_bindings.MjModel.from_xml_path(f"/{d}/box_pushing.xml")
+            self.model = self._mujoco_bindings.MjModel.from_xml_path(
+                f"/{d}/box_pushing.xml"
+            )
             self.data = self._mujoco_bindings.MjData(self.model)
 
         if self.viewer:
@@ -141,15 +143,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         q = self.data.qpos.copy()
         v = self.data.qvel.copy()
-        self.desired_joint_pos = self.calculateOfflineIK(
-            desired_tcp_pos, desired_tcp_quat
-        )
-        desired_joint_pos = self.desired_joint_pos
+        # self.desired_joint_pos = self.calculateOfflineIK(
+        #     desired_tcp_pos, desired_tcp_quat
+        # )
+        # desired_joint_pos = self.desired_joint_pos
         self.data.qpos = q
         self.data.qvel = v
 
-        self.data.qpos[:7] = desired_joint_pos
-        self.data.qvel[:7] = 0
+        # self.data.qpos[:7] = desired_joint_pos
+        # self.data.qvel[:7] = 0
 
         unstable_simulation = False
 
@@ -168,8 +170,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         box_quat = self.data.body("box_0").xquat.copy()
         target_pos = self.data.body("replan_target_pos").xpos.copy()
         target_quat = self.data.body("replan_target_pos").xquat.copy()
-        rod_tip_pos = self.data.site("rod_tip").xpos.copy()
-        rod_quat = self.data.body("push_rod").xquat.copy()
+        rod_tip_pos = self.data.body("finger").xpos.copy()
+        rod_quat = self.data.body("finger").xquat.copy()
         qpos = self.data.qpos[:7].copy()
         qvel = self.data.qvel[:7].copy()
 
@@ -239,13 +241,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return ret
 
     def reset_model(self):
-        self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
+        # self.set_state(self.init_qpos_box_pushing, self.init_qvel_box_pushing)
         box_init_pos = (
             self.sample_context()
             if self.random_init
             else np.array([0.4, 0.3, -0.01, 0.0, 0.0, 0.0, 1.0])
         )
-        self.data.joint("box_joint").qpos = box_init_pos
+        self.data.joint("box_rot_joint").qpos = self.np_random.uniform(0, 2 * np.pi)
+        self.data.joint("box_x_joint").qpos = box_init_pos[0]
+        self.data.joint("box_y_joint").qpos = box_init_pos[1]
         self.data.joint("finger_x_joint").qpos = box_init_pos[0]
         self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
@@ -275,11 +279,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         # set the robot to the right configuration (rod tip in the box)
         desired_tcp_pos = box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
         desired_tcp_quat = np.array([0, 1, 0, 0])
-        desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
+        # desired_joint_pos = self.calculateOfflineIK(desired_tcp_pos, desired_tcp_quat)
 
-        desired_joint_vel = desired_joint_pos - self.data.qpos[:7]
+        # desired_joint_vel = desired_joint_pos - self.data.qpos[:7]
 
-        self.data.qvel[:7] = desired_joint_vel
+        # self.data.qvel[:7] = desired_joint_vel
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
         self._episode_energy = 0.0
@@ -334,6 +338,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def _joint_limit_violate_penalty(
         self, qpos, qvel, enable_pos_limit=False, enable_vel_limit=False
     ):
+        return 0
         penalty = 0.0
         p_coeff = 1.0
         v_coeff = 1.0
