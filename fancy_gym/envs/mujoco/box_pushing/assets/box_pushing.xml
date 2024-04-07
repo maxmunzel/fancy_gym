@@ -52,11 +52,11 @@
   </worldbody>
 
  <contact>
-  <exclude body1="push_rod" body2="box_0"/>
+     <!--<exclude body1="push_rod" body2="box_0"/>-->
  </contact>
 
   <include file="kit_lab_surrounding.xml" />
-  <include file="panda_rod.xml" />
+     <!--<include file="panda_rod.xml" />-->
   <include file="push_box.xml" />
   <include file="finger.xml" />
 </mujoco>

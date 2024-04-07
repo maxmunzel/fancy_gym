@@ -2,6 +2,7 @@ import pygame
 import numpy as np
 import time
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_env import BoxPushingDense
+from fancy_gym.envs.mujoco.box_pushing.throttle import Throttle
 import fancy_gym
 import os
 
@@ -25,8 +26,10 @@ obs = env.reset(seed=42)
 cum_reward = 0
 start_time = time.time()
 frame = 0
+throttle = Throttle(target_hz=50, busy_wait=False)
 while True:
     frame += 1
+    throttle.tick()
     for event in pygame.event.get():
         # If you want to handle specific events, you can do that here
         if event.type == pygame.JOYBUTTONDOWN:
@@ -41,7 +44,9 @@ while True:
 
     # Here, I assume the environment expects a 2D action.
     # Adjust this as per the action space of your environment.
-    action = np.array([y_axis, x_axis])
+
+    finger_pos = env.data.body("finger").xpos.copy()
+    action = finger_pos[:2] +  np.array([y_axis, x_axis])
     action *= 1
 
     # print(action)
