@@ -48,8 +48,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
-    action_space = spaces.Box(low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35]))
-
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         self.throttle = None
         self.doraemon = None
@@ -98,6 +96,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             model_path=self.model_path,
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
+        )
+        # After the super messed it up
+        self.action_space = spaces.Box(
+            low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35])
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 10],
