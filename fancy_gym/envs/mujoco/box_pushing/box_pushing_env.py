@@ -114,7 +114,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dist=dist,
             k=200,
             kl_bound=0.2,
-            target_success_rate=0.9,
+            target_success_rate=0.3,
         )
         # make it a little simpler for me to write the ymls
         print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
