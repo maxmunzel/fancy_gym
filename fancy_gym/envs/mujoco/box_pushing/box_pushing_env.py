@@ -1,15 +1,12 @@
 import os
-import sys
 import shutil
 import tempfile
-import time
 import json
 import redis
 import random
 import numpy as np
 from pathlib import Path
 from gym import utils, spaces
-from copy import deepcopy
 from gym.envs.mujoco import MujocoEnv
 from fancy_gym.envs.mujoco.box_pushing.throttle import Throttle
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
@@ -22,11 +19,9 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_max,
     q_min,
     q_dot_max,
-    q_torque_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import NamedTuple, Tuple, List, Optional, Dict
-import random
+from typing import Tuple, Optional
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
@@ -60,7 +55,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
         self.trace = None
-        self.old_qpos = None
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
             [
@@ -85,6 +79,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         self.init_qvel_box_pushing = np.zeros(15 + 2)
         self.frame_skip = frame_skip
+        self.ee_speeds = []
+        self.last_ee_pos = None
 
         self._q_max = q_max
         self._q_min = q_min
@@ -106,8 +102,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 10],
             # alphas=[1, 1, 1, 100],
-            low=[-0.35, 0.22, 0, 0.7, 70],
-            high=[0.35, 0.58, 2 * np.pi, 1.3, 200],
+            low=[-0.35, 0.22, 0, 0.17, 70],
+            high=[0.35, 0.58, 2 * np.pi, .20, 160],
             param_bound=[1, 1, 1, 10, 10],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
@@ -229,6 +225,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         qpos = self.data.qpos[:7].copy()
         qvel = self.data.qvel[:7].copy()
 
+        # Append to EE Speed History
+        if self.last_ee_pos is None:
+            self.last_ee_pos = target_pos[:2]
+        speed = np.linalg.norm(self.last_ee_pos - target_pos[:2])/self.dt
+        self.ee_speeds.append(speed)
+        self.last_ee_pos = target_pos[:2]
+
+
+
         self.check_mocap()
 
         if not unstable_simulation:
@@ -246,24 +251,20 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             )
         else:
             reward = -50
+            
+        if episode_end:
+            # Max EE Speed Panality -- ensure the trajectory is executable
+            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
+            # during the rollouts of Sweep47.
+            speed_limit = 0.63 # m/s
+            max_speed_penality = -50
+            reward += np.tanh(max(self.ee_speeds) - speed_limit) * max_speed_penality
+
+            # Also make sure we stop at the end of the episode
+            reward -= 200 * speed
 
         # calculate power cost
-        qpos = self.data.qpos[:7].copy() * 10
-
-        if self.old_qpos is None:
-            self.old_qpos = qpos
-        reward -= 0.01 * np.linalg.norm(qpos - self.old_qpos) ** 2
-
-        qvel = self.old_qpos - qpos
-
-        self.old_qpos = qpos.copy()
-        self._episode_energy += np.sum(np.linalg.norm(qvel) ** 2)
-
-        speed = np.tanh(np.linalg.norm(qvel) ** 2 * 1000)
-        print(speed)
-
-        if episode_end:
-            reward -= 20 * speed
+        self._episode_energy += speed**2
 
         obs = self._get_obs()
         box_goal_pos_dist = (
@@ -288,6 +289,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "is_success": is_success,
                 "num_steps": self._steps,
                 "end_speed": speed,
+                "max_speed": max(self.ee_speeds),
+
             }
             infos.update(self.doraemon.param_dict())
 
@@ -321,6 +324,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return ret
 
     def reset_model(self):
+        self.last_ee_pos = None
+        self.ee_speeds = []
         self.throttle = None  # clear throttle so target time does not persist resets
         self.randomize()
         if self.doraemon is not None:
@@ -390,8 +395,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.model.body_quat[3] = box_target_pos[-4:]
 
         # set the robot to the right configuration (rod tip in the box)
-        desired_tcp_pos = box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
-        desired_tcp_quat = np.array([0, 1, 0, 0])
+        box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
 
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
@@ -694,6 +698,7 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
         ep_end_joint_vel = -50.0 * np.linalg.norm(qvel)
 
         reward += box_goal_pos_dist_reward + box_goal_rot_dist_reward + ep_end_joint_vel
+
 
         return reward
 

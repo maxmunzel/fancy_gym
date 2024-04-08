@@ -46,7 +46,7 @@ while True:
     # Adjust this as per the action space of your environment.
 
     finger_pos = env.data.body("finger").xpos.copy()
-    action = finger_pos[:2] +  np.array([y_axis, x_axis])
+    action = finger_pos[:2] + 2* np.array([y_axis, x_axis])
     action *= 1
 
     # print(action)
