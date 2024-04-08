@@ -44,7 +44,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
     # number of samples/full trajectories (multiple environment steps)
     rewards = 0
-    env.env.env.traj_gen.show_scaled_basis(plot=True)
+    # env.env.env.traj_gen.show_scaled_basis(plot=True)
     for _ in range(iterations):
         ac =  spaces.Box(low=np.array([ 0.15, -0.35]*5), high=np.array([0.55, 0.35]*5)).sample()
         ac[-2:] = [0.4, 0]

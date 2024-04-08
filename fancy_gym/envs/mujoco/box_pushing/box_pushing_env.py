@@ -21,7 +21,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_dot_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import Tuple, Optional
+from typing import Tuple, Optional, Union
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
@@ -103,7 +103,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             alphas=[1, 1, 1, 1, 10],
             # alphas=[1, 1, 1, 100],
             low=[-0.35, 0.22, 0, 0.17, 70],
-            high=[0.35, 0.58, 2 * np.pi, .20, 160],
+            high=[0.35, 0.58, 2 * np.pi, 0.20, 160],
             param_bound=[1, 1, 1, 10, 10],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
@@ -194,7 +194,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         desired_tcp_pos = self.data.body("finger").xpos.copy()
         desired_tcp_pos[2] += 0.055
-        desired_tcp_quat = np.array([0, 1, 0, 0])
 
         q = self.data.qpos.copy()
         v = self.data.qvel.copy()
@@ -228,11 +227,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         # Append to EE Speed History
         if self.last_ee_pos is None:
             self.last_ee_pos = target_pos[:2]
-        speed = np.linalg.norm(self.last_ee_pos - target_pos[:2])/self.dt
+        speed = np.linalg.norm(self.last_ee_pos - target_pos[:2]) / self.dt
         self.ee_speeds.append(speed)
         self.last_ee_pos = target_pos[:2]
-
-
 
         self.check_mocap()
 
@@ -251,12 +248,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             )
         else:
             reward = -50
-            
+
         if episode_end:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep47.
-            speed_limit = 0.63 # m/s
+            speed_limit = 0.63  # m/s
             max_speed_penality = -50
             reward += np.tanh(max(self.ee_speeds) - speed_limit) * max_speed_penality
 
@@ -290,7 +287,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "num_steps": self._steps,
                 "end_speed": speed,
                 "max_speed": max(self.ee_speeds),
-
             }
             infos.update(self.doraemon.param_dict())
 
@@ -429,14 +425,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def _get_obs(self):
         obs = np.concatenate(
             [
-                self.data.qpos[:7].copy(),  # joint position
-                self.data.qvel[:7].copy(),  # joint velocity
-                # self.data.qfrc_bias[:7].copy(),  # joint gravity compensation
-                # self.data.site("rod_tip").xpos.copy(),  # position of rod tip
-                # self.data.body("push_rod").xquat.copy(),  # orientation of rod
-                self.data.body("box_0").xpos.copy(),  # position of box
+                self.data.body("finger").xpos[:2].copy(),
+                self.data.body("box_0").xpos[:2].copy(),  # position of box
+                self.data.body("replan_target_pos")
+                .xpos[:2]
+                .copy(),  # position of target
                 self.data.body("box_0").xquat.copy(),  # orientation of box
-                self.data.body("replan_target_pos").xpos.copy(),  # position of target
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
@@ -698,7 +692,6 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
         ep_end_joint_vel = -50.0 * np.linalg.norm(qvel)
 
         reward += box_goal_pos_dist_reward + box_goal_rot_dist_reward + ep_end_joint_vel
-
 
         return reward
 
