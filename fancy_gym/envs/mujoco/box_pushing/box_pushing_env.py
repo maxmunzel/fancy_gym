@@ -48,8 +48,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
-    action_space = spaces.Box(low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35]))
-
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         self.throttle = None
         self.doraemon = None
@@ -98,6 +96,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             model_path=self.model_path,
             frame_skip=self.frame_skip,
             mujoco_bindings="mujoco",
+        )
+        # After the super messed it up
+        self.action_space = spaces.Box(
+            low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35])
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 10],
@@ -226,10 +228,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         # Append to EE Speed History
         if self.last_ee_pos is None:
-            self.last_ee_pos = target_pos[:2]
-        speed = np.linalg.norm(self.last_ee_pos - target_pos[:2]) / self.dt
+            self.last_ee_pos = rod_tip_pos[:2].copy()
+        speed = np.linalg.norm(self.last_ee_pos - rod_tip_pos[:2]) / self.dt
         self.ee_speeds.append(speed)
-        self.last_ee_pos = target_pos[:2]
+        self.last_ee_pos = rod_tip_pos[:2].copy()
+
+        print(f"Speed: {speed:2.2f} Max Speed: {max(self.ee_speeds):3.2f}")
 
         self.check_mocap()
 
@@ -291,8 +295,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             infos.update(self.doraemon.param_dict())
 
         self.last_episode_successful = is_success
-
-        print(target_pos)
 
         if redis_connection is not None:
             self.push_to_redis()
