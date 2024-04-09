@@ -102,11 +102,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=np.array([0.15, -0.35]), high=np.array([0.55, 0.35])
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 10],
+            alphas=[1, 1, 1, 1, 100],
             # alphas=[1, 1, 1, 100],
             low=[-0.35, 0.22, 0, 0.17, 70],
             high=[0.35, 0.58, 2 * np.pi, 0.20, 160],
-            param_bound=[1, 1, 1, 10, 10],
+            param_bound=[1, 1, 1, 10, 100],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
         )
@@ -363,7 +363,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             print(f"Reset done, finger @ {x:.2f} {y:.2f}")
 
         else:
-            self.data.joint("box_rot_joint").qpos = self.np_random.uniform(0, 2 * np.pi)
+            self.data.joint("box_rot_joint").qpos = self.sample_dict["start_theta"]
             self.data.joint("box_x_joint").qpos = box_init_pos[0]
             self.data.joint("box_y_joint").qpos = box_init_pos[1]
             self.data.joint("finger_x_joint").qpos = box_init_pos[0]
