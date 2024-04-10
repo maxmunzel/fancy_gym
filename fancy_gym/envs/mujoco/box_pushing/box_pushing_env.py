@@ -259,7 +259,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # during the rollouts of Sweep47.
             speed_limit = 0.63  # m/s
             max_speed_penality = -50
-            reward += np.tanh(max(self.ee_speeds) - speed_limit) * max_speed_penality
+            reward += np.tanh(max(self.ee_speeds) - speed_limit + 1) * max_speed_penality
 
             # Also make sure we stop at the end of the episode
             reward -= 200 * speed
