@@ -35,7 +35,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     # # This is the magic line
     # for i in range(162):
     #     env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
-    env = gym.make("Sweep53-tau7")
+    env = gym.make("Sweep55-alpha5-tau5")
 
     env.reset()
 
@@ -44,7 +44,7 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
 
     # number of samples/full trajectories (multiple environment steps)
     rewards = 0
-    env.env.env.traj_gen.show_scaled_basis(plot=True)
+    # env.env.env.traj_gen.show_scaled_basis(plot=True)
     for _ in range(iterations):
         # ac =  spaces.Box(low=np.array([ 0.15, -0.35]*6), high=np.array([0.55, 0.35]*6)).sample()
 
