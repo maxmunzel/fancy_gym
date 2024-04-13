@@ -254,23 +254,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
-        assert np.all(
-            np.isfinite(reward)
-        ), f"""
-            reward={reward}
-            pos={box_pos}
-            pos_t={target_pos}
-            episode_end={episode_end}
-            box_pos={box_pos}
-            box_quat={box_quat}
-            target_pos={target_pos}
-            target_quat={target_quat}
-            rod_tip_pos={rod_tip_pos}
-            rod_quat={rod_quat}
-            qpos={qpos}
-            qvel={qvel}
-            action={action}
-            """
+        reward = np.nan_to_num(reward, nan=-300, posinf=-300, neginf=-300)
 
         if episode_end and False:
             # Max EE Speed Panality -- ensure the trajectory is executable
@@ -291,6 +275,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self._episode_energy += speed**2
 
         obs = self._get_obs()
+        if np.max(np.abs(obs)) > 8.9:
+            print(f"Fishy observation: {obs}")
+            reward -= 200
+
         box_goal_pos_dist = (
             0.0 if not episode_end else np.linalg.norm(box_pos - target_pos)
         )
@@ -461,7 +449,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 ).xquat.copy(),  # orientation of target
             ]
         )
-        assert np.all(np.isfinite(obs)), f"{obs} is not finite"
+        obs = np.nan_to_num(obs, nan=9, posinf=10, neginf=-10)
         return obs
 
     def _joint_limit_violate_penalty(

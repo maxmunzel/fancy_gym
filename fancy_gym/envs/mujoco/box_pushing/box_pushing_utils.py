@@ -43,7 +43,7 @@ def rotation_distance(p: np.array, q: np.array):
     theta: rotation angle between p and q (rad)
     """
     assert p.shape == q.shape, "p and q should be quaternion"
-    theta = 2 * np.arccos(abs(p @ q))
+    theta = 2 * np.arccos(min(0.99, abs(p @ q)))
     return theta
 
 
