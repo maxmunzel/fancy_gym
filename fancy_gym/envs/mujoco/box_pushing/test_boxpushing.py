@@ -19,9 +19,9 @@ def test_traj():
     refpath = Path(__file__).parent / "xpos_42.json"
     # env = BoxPushingDense()
     # env.reset(seed=42)
-   
+
     # xpos = list()
-    # 
+    #
     # i = 0
     # for action in points:
     #     for _ in range(n_rep):

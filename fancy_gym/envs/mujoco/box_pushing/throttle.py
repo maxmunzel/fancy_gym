@@ -2,8 +2,10 @@ import time
 import matplotlib.pyplot as plt
 from collections import deque
 
+
 class Throttle:
     """Utility class to make a loop run at a specific rate, useful to run real-life rollouts at a consistent rate"""
+
     def __init__(self, target_hz: float, busy_wait: bool = False):
         self.busy_wait = busy_wait
         self.target_hz = target_hz
@@ -13,10 +15,10 @@ class Throttle:
 
     def tick(self):
         self.count += 1
-        target_time = self.count/self.target_hz + self.start_time
-           
+        target_time = self.count / self.target_hz + self.start_time
+
         error = target_time - time.perf_counter()
-        
+
         if error > 0:
             self._sleep(error)
         else:
