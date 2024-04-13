@@ -254,6 +254,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
+        reward = np.nan_to_num(reward, nan=-400, posinf=-400, neginf=-400)
+
         if episode_end and False:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
