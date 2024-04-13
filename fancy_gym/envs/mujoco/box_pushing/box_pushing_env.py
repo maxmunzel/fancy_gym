@@ -321,18 +321,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         return obs, reward, episode_end, infos
 
-    def reset(
-        self,
-        *,
-        seed: Optional[int] = None,
-        options: Optional[dict] = None,
-    ) -> Tuple[np.ndarray, dict]:
-        ret = super(BoxPushingEnvBase, self).reset(seed=seed, options=options)
+    def reset_model(self):
         if self.doraemon:
             self.doraemon.dist.random = self.np_random
-        return ret
-
-    def reset_model(self):
         self.last_ee_pos = None
         self.ee_speeds = []
         self.throttle = None  # clear throttle so target time does not persist resets
