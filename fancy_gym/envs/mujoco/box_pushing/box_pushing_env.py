@@ -263,7 +263,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             reward += (
                 np.tanh(max(self.ee_speeds) - speed_limit + 1) * max_speed_penality
             )
-            # subtract y-intercept if speed penality
+            # subtract y-intercept of speed penality
             reward += np.tanh(0 - speed_limit + 1) * max_speed_penality
 
             # Also make sure we stop at the end of the episode
@@ -443,6 +443,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 ).xquat.copy(),  # orientation of target
             ]
         )
+        obs = np.nan_to_num(obs, nan=10, posinf=10, neginf=-10)
         return obs
 
     def _joint_limit_violate_penalty(
@@ -663,6 +664,9 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
             box_goal_rot_dist_reward = (
                 -rotation_distance(box_quat, target_quat) / np.pi * 100
             )
+
+            if np.isnan(box_goal_rot_dist_reward):
+                box_goal_rot_dist_reward = -100
 
             reward += box_goal_pos_dist_reward + box_goal_rot_dist_reward
 
