@@ -188,6 +188,47 @@ register(  # [MPDone
 
 # Here we use the same reward as in BeerPong-v0, but now consider after the release,
 # only one time step, i.e. we simulate until the end of th episode
+# Max
+class Sweep57Wrapper(mujoco.box_pushing.MPWrapper):
+    mp_config = {
+        'ProMP': {},
+        'DMP': {},
+        'ProDMP': {
+            "name": "BoxPushingTemporalSparse-v0",
+            "trajectory_generator_kwargs": {
+                "trajectory_generator_type": "prodmp",
+                "duration": 8.0, 
+                "action_dim": 2,
+                "weight_scale": [1,1,1,1,0],
+                "auto_scale_basis": True,
+                "goal_scale": 1,
+                "relative_goal": False,
+                "disable_goal": False,
+            },
+            "phase_generator_kwargs": {
+                'phase_generator_type': 'exp',
+                'tau': 5, 
+            },
+            "controller_kwargs": {
+                "controller_type": "position",
+                },
+            "basis_generator_kwargs": {
+                'basis_generator_type': 'prodmp',
+                'alpha': 5,
+                "num_basis": 5,
+                # 'num_basis_zero_start': 1,
+            },
+            "random_init": True,
+        }
+    }
+for alpha in [4,5,6]:
+        register(
+        id=f"Sweep57-v0",
+        entry_point='fancy_gym.envs.mujoco:BoxPushingTemporalSparse',
+        mp_wrapper=Sweep57Wrapper,
+        max_episode_steps=MAX_EPISODE_STEPS_BOX_PUSHING,
+        add_mp_types=["ProDMP"]
+    )
 register(
     id='fancy/BeerPongStepBased-v0',
     entry_point='fancy_gym.envs.mujoco:BeerPongEnvStepBasedEpisodicReward',
@@ -205,26 +246,26 @@ register(
 )
 
 # Box pushing environments with different rewards
-for reward_type in ["Dense", "TemporalSparse", "TemporalSpatialSparse"]:
-    register(
-        id='fancy/BoxPushing{}-v0'.format(reward_type),
-        entry_point='fancy_gym.envs.mujoco:BoxPushing{}'.format(reward_type),
-        mp_wrapper=mujoco.box_pushing.MPWrapper,
-        max_episode_steps=MAX_EPISODE_STEPS_BOX_PUSHING,
-    )
-    register(
-        id='fancy/BoxPushingRandomInit{}-v0'.format(reward_type),
-        entry_point='fancy_gym.envs.mujoco:BoxPushing{}'.format(reward_type),
-        mp_wrapper=mujoco.box_pushing.MPWrapper,
-        max_episode_steps=MAX_EPISODE_STEPS_BOX_PUSHING,
-        kwargs={"random_init": True}
-    )
-
-    upgrade(
-        id='fancy/BoxPushing{}Replan-v0'.format(reward_type),
-        base_id='fancy/BoxPushing{}-v0'.format(reward_type),
-        mp_wrapper=mujoco.box_pushing.ReplanMPWrapper,
-    )
+# for reward_type in ["Dense", "TemporalSparse", "TemporalSpatialSparse"]:
+#     register(
+#         id='fancy/BoxPushing{}-v0'.format(reward_type),
+#         entry_point='fancy_gym.envs.mujoco:BoxPushing{}'.format(reward_type),
+#         mp_wrapper=mujoco.box_pushing.MPWrapper,
+#         max_episode_steps=MAX_EPISODE_STEPS_BOX_PUSHING,
+#     )
+#     register(
+#         id='fancy/BoxPushingRandomInit{}-v0'.format(reward_type),
+#         entry_point='fancy_gym.envs.mujoco:BoxPushing{}'.format(reward_type),
+#         mp_wrapper=mujoco.box_pushing.MPWrapper,
+#         max_episode_steps=MAX_EPISODE_STEPS_BOX_PUSHING,
+#         kwargs={"random_init": True}
+#     )
+# 
+#     upgrade(
+#         id='fancy/BoxPushing{}Replan-v0'.format(reward_type),
+#         base_id='fancy/BoxPushing{}-v0'.format(reward_type),
+#         mp_wrapper=mujoco.box_pushing.ReplanMPWrapper,
+#     )
 
 # Table Tennis environments
 for ctxt_dim in [2, 4]:

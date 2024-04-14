@@ -20,6 +20,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_min,
     q_dot_max,
 )
+from mujoco import MjData, MjModel
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
 from typing import Tuple, Optional, Union
 from doraemon import Doraemon, MultivariateBetaDistribution
@@ -48,10 +49,26 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     3. time-spatial-depend sparse reward
     """
 
-    def __init__(self, frame_skip: int = 10, random_init: bool = True):
+    metadata = {
+        "render_modes": [
+            "human",
+            "rgb_array",
+            "depth_array",
+        ],
+        "render_fps": 50,
+    }
+
+    def __init__(
+        self,
+        frame_skip: int = 10,
+        random_init: bool = True,
+        render_mode: Optional[str] = None,
+    ):
+        utils.EzPickle.__init__(**locals())
+        self.last_episode_successful = False
+        self.viewer = None
         self.throttle = None
         self.doraemon = None
-        utils.EzPickle.__init__(**locals())
         self.trace = None
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
@@ -91,11 +108,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.model_path = os.path.join(
             os.path.dirname(__file__), "assets", "box_pushing.xml"
         )
+
         MujocoEnv.__init__(
             self,
             model_path=self.model_path,
             frame_skip=self.frame_skip,
-            mujoco_bindings="mujoco",
+            render_mode=render_mode,
+            observation_space=spaces.Box(low=np.ones(14), high=np.ones(14)),
         )
         # After the super messed it up
         self.action_space = spaces.Box(
@@ -149,8 +168,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
                 f_dst.write(content.replace(old, new))
 
-            self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
-            self.data = self._mujoco_bindings.MjData(self.model)
+            self.model = MjModel.from_xml_path(self.model_path)
+            self.data = MjData(self.model)
 
         if self.viewer:
             # update viewer, so rendering keeps working
@@ -319,8 +338,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             f"Step complete, finger @ {self.data.body('finger').xpos[:2]}, reward={reward}"
         )
         reward = np.nan_to_num(reward, nan=-300, posinf=-300, neginf=-300)
+        truncated = False
 
-        return obs, reward, episode_end, infos
+        return obs, reward, episode_end, truncated, infos
 
     def reset_model(self):
         if self.doraemon:
@@ -609,10 +629,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
 
 class BoxPushingDense(BoxPushingEnvBase):
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
-        super(BoxPushingDense, self).__init__(
-            frame_skip=frame_skip, random_init=random_init
-        )
+    def __init__(self, **kwargs):
+        super(BoxPushingDense, self).__init__(**kwargs)
 
     def _get_reward(
         self,
@@ -636,10 +654,8 @@ class BoxPushingDense(BoxPushingEnvBase):
 
 
 class BoxPushingTemporalSparse(BoxPushingEnvBase):
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
-        super(BoxPushingTemporalSparse, self).__init__(
-            frame_skip=frame_skip, random_init=random_init
-        )
+    def __init__(self, **kwargs):
+        super(BoxPushingTemporalSparse, self).__init__(**kwargs)
 
     def _get_reward(
         self,
