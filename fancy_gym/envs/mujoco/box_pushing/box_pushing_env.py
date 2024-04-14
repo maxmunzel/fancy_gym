@@ -114,7 +114,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             model_path=self.model_path,
             frame_skip=self.frame_skip,
             render_mode=render_mode,
-            observation_space=spaces.Box(low=np.ones(14), high=np.ones(14)),
+            observation_space=spaces.Box(low=-np.ones(14), high=np.ones(14)),
         )
         # After the super messed it up
         self.action_space = spaces.Box(
