@@ -307,19 +307,17 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
             else False
         )
-        if self.doraemon is None:
-            infos = {}
-        else:
-            infos = {
-                "episode_end": episode_end,
-                "box_goal_pos_dist": box_goal_pos_dist,
-                "box_goal_rot_dist": box_goal_quat_dist,
-                "episode_energy": 0.0 if not episode_end else self._episode_energy,
-                "is_success": is_success,
-                "num_steps": self._steps,
-                "end_speed": speed,
-                "max_speed": max(self.ee_speeds),
-            }
+        infos = {
+            "episode_end": episode_end,
+            "box_goal_pos_dist": box_goal_pos_dist,
+            "box_goal_rot_dist": box_goal_quat_dist,
+            "episode_energy": 0.0 if not episode_end else self._episode_energy,
+            "is_success": is_success,
+            "num_steps": self._steps,
+            "end_speed": speed,
+            "max_speed": max(self.ee_speeds),
+        }
+        if self.doraemon is not None:
             infos.update(self.doraemon.param_dict())
 
         self.last_episode_successful = is_success
