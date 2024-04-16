@@ -270,6 +270,39 @@ DEFAULT_BB_DICT_ProDMP = {
 # Max
 for alpha in [4,5,6]:
         register(
+        id=f"Sweep60-alpha{alpha}-tau5",
+        entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
+        kwargs={
+            "name": "BoxPushingTemporalSparse-v0",
+            "wrappers": [mujoco.box_pushing.MPWrapper],
+            "trajectory_generator_kwargs": {
+                "trajectory_generator_type": "prodmp",
+                "duration": 8.0, 
+                "action_dim": 2,
+                "weight_scale": [1,1,1,1,1,0],
+                "auto_scale_basis": True,
+                "goal_scale": 1,
+                "relative_goal": False,
+                "disable_goal": False,
+            },
+            "phase_generator_kwargs": {
+                'phase_generator_type': 'exp',
+                'tau': 5, 
+            },
+            "controller_kwargs": {
+                "controller_type": "position",
+                },
+            "basis_generator_kwargs": {
+                'basis_generator_type': 'prodmp',
+                'alpha': alpha,
+                "num_basis": 6,
+                # 'num_basis_zero_start': 1,
+            },
+            "random_init": True,
+        }
+    )
+for alpha in [4,5,6]:
+        register(
         id=f"Sweep55-alpha{alpha}-tau5",
         entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
         kwargs={
