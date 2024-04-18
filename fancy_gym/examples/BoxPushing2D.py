@@ -35,8 +35,11 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
     # # This is the magic line
     # for i in range(162):
     #     env = gym.make(f"ProDMP-BB-Random-Sweep-PosCtrl-{i}")
-    #env = gym.make("Sweep60-alpha6-tau5")
-    env = gym.make("Sweep53-tau5")
+    for alpha in range(4,17,2):
+        env = gym.make(f"Sweep60-alpha{alpha}-tau5")
+        print(alpha)
+        env.env.env.traj_gen.show_scaled_basis(plot=True)
+    #env = gym.make("Sweep53-tau5")
 
     env.reset()
 

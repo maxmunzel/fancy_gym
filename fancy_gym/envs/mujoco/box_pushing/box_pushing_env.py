@@ -101,7 +101,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.action_space = spaces.Box(
             low=np.array([0.20, -0.37]), high=np.array([0.75, 0.37])
         )
-        self.observation_space = space.Box(low=-np.ones(14), high=np.ones(14))
+        self.observation_space = spaces.Box(
+            low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
+        )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1],
             # alphas=[1, 1, 1, 100],

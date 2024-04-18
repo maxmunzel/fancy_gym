@@ -268,7 +268,7 @@ DEFAULT_BB_DICT_ProDMP = {
     }
 }
 # Max
-for alpha in [4,5,6]:
+for alpha in [4,5,6,7,8,9,10,11,12,13,14,15,16]:
         register(
         id=f"Sweep60-alpha{alpha}-tau5",
         entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
