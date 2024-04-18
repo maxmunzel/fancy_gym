@@ -254,7 +254,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
-
         if episode_end and False:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
@@ -316,7 +315,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 )  # redis has no bools
                 del feedback["episode_end"]
                 redis_connection.xadd("episode_feedback", feedback)
-        print(f"Step complete, finger @ {self.data.body('finger').xpos[:2]}, reward={reward}")
+        print(
+            f"Step complete, finger @ {self.data.body('finger').xpos[:2]}, reward={reward}"
+        )
         reward = np.nan_to_num(reward, nan=-300, posinf=-300, neginf=-300)
 
         return obs, reward, episode_end, infos
