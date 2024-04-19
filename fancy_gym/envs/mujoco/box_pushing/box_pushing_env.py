@@ -276,9 +276,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self._episode_energy += speed**2
 
         obs = self._get_obs()
-        if np.max(np.abs(obs)) > 8.9:
-            print(f"Fishy observation: {obs}")
-            reward -= 200
 
         box_goal_pos_dist = (
             0.0 if not episode_end else np.linalg.norm(box_pos - target_pos)
@@ -444,7 +441,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 ).xquat.copy(),  # orientation of target
             ]
         )
-        obs = np.nan_to_num(obs, nan=9, posinf=10, neginf=-10)
+        obs = np.nan_to_num(obs, nan=0)
+        obs = np.clip(obs, -1, 1)
         return obs
 
     def _joint_limit_violate_penalty(
