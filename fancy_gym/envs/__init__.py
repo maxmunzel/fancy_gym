@@ -279,7 +279,7 @@ for alpha in [4,5,6,7,8,9,10,11,12,13,14,15,16]:
                 "trajectory_generator_type": "prodmp",
                 "duration": 8.0, 
                 "action_dim": 2,
-                "weight_scale": [1,1,1,1,1,0],
+                "weight_scale": 1, #[1,1,1,1,1,0],
                 "auto_scale_basis": True,
                 "goal_scale": 1,
                 "relative_goal": False,
