@@ -1,3 +1,4 @@
+*.pdf
 junk/
 # randomized mujoco files
 *_rand.xml
