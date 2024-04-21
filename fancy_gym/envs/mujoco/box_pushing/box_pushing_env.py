@@ -105,12 +105,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1],
+            alphas=[10, 10, 100, 1, 1],
             # alphas=[1, 1, 1, 100],
             # low=[-0.35, 0.22, 0, 0.17, 70],
             low=[-0.39, 0.22, 0, 0.17, 160],
             high=[0.39, 0.65, 2 * np.pi, 0.20, 160],
-            param_bound=[1, 1, 1, 10, 1],
+            param_bound=[10, 10, 100, 10, 1],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
         )
@@ -331,7 +331,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            # self.doraemon.update_dist()
+            self.doraemon.update_dist()
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
