@@ -123,7 +123,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             target_success_rate=0.3,
         )
         # make it a little simpler for me to write the ymls
-        print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
+        # print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
         self.randomize()
         self.reset_model()
 
@@ -237,7 +237,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.ee_speeds.append(speed)
         self.last_ee_pos = rod_tip_pos[:2].copy()
 
-        print(f"Speed: {speed:2.2f} Max Speed: {max(self.ee_speeds):3.2f}")
+        # print(f"Speed: {speed:2.2f} Max Speed: {max(self.ee_speeds):3.2f}")
 
         self.check_mocap()
 
@@ -315,9 +315,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 )  # redis has no bools
                 del feedback["episode_end"]
                 redis_connection.xadd("episode_feedback", feedback)
-        print(
-            f"Step complete, finger @ {self.data.body('finger').xpos[:2]}, reward={reward}"
-        )
+        # print(
+        #    f"Step complete, finger @ {self.data.body('finger').xpos[:2]}, reward={reward}"
+        # )
         reward = np.nan_to_num(reward, nan=-300, posinf=-300, neginf=-300)
 
         return obs, reward, episode_end, infos
