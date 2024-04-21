@@ -262,7 +262,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep47.
             speed_limit = 0.63  # m/s
-            max_speed_penality = -30
+            max_speed_penality = -10
             reward += (
                 np.tanh(max(self.ee_speeds) - speed_limit + 1) * max_speed_penality
             )
@@ -270,7 +270,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             reward += np.tanh(0 - speed_limit + 1) * max_speed_penality
 
             # Also make sure we stop at the end of the episode
-            reward -= 50 * speed
+            reward -= 10 * speed
 
         # calculate power cost
         self._episode_energy += speed**2
