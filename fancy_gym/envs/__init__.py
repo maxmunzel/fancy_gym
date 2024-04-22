@@ -338,11 +338,12 @@ for alpha in [4,5,6,7,8,9,10,11,12,13,14,15,16]:
         }
     )
 for alpha in [4,5,6]:
+    for dense in [True, False]:
         register(
-        id=f"Sweep55-alpha{alpha}-tau5",
+        id=f"Sweep55-alpha{alpha}-tau5" + ("-dense" if dense else ""),
         entry_point='fancy_gym.utils.make_env_helpers:make_bb_env_helper',
         kwargs={
-            "name": "BoxPushingTemporalSparse-v0",
+            "name": "BoxPushingDense-v0" if dense else "BoxPushingTemporalSparse-v0",
             "wrappers": [mujoco.box_pushing.MPWrapper],
             "trajectory_generator_kwargs": {
                 "trajectory_generator_type": "prodmp",
