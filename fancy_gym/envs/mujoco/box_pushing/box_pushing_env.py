@@ -663,8 +663,8 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
             box_goal_rot_dist_reward = (
                 -rotation_distance(box_quat, target_quat) / np.pi * 100
             )
-            if np.isnan(box_goal_rot_dist_reward):
-                box_goal_rot_dist_reward = -100
+
+            box_goal_rot_dist_reward += (box_goal_rot_dist_reward / 20) ** 2
 
             reward += box_goal_pos_dist_reward + box_goal_rot_dist_reward
         return reward
