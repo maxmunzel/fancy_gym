@@ -337,7 +337,7 @@ for alpha in [4,5,6,7,8,9,10,11,12,13,14,15,16]:
             "random_init": True,
         }
     )
-for alpha in [4,5,6]:
+for alpha in range(5,20):
     for dense in [True, False]:
         register(
         id=f"Sweep55-alpha{alpha}-tau5" + ("-dense" if dense else ""),
