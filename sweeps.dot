@@ -59,6 +59,7 @@ digraph Sweeps {
     "Sweep66" [label=<Sweep66 - BB <BR/> 64 but with Doraemon as Curriculum >];
     "Sweep67" [label=<Sweep67 - BB <BR/> 55's MPs, 64's Training, No DR, Sparse/Dense Rewards >];
     "Sweep68" [label=<Sweep68 - BB <BR/> 67 but harsher rotation, no speed penality, varying weight_scales >];
+    "Sweep69" [label=<Sweep69 - BB <BR/> 68 but with steppy max speed penality, smaller workspace >];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -120,5 +121,6 @@ digraph Sweeps {
     "Sweep55" -> "Sweep67"
     "Sweep64" -> "Sweep67"
     "Sweep67" -> "Sweep68"
+    "Sweep68" -> "Sweep69"
 }
 

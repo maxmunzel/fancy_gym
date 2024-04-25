@@ -99,7 +99,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         # After the super messed it up
         self.action_space = spaces.Box(
-            low=np.array([0.20, -0.37]), high=np.array([0.75, 0.37])
+            low=np.array([0.35, -0.37]), high=np.array([0.65, 0.37])
         )
         self.observation_space = spaces.Box(
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
@@ -108,8 +108,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             alphas=[1, 1, 1, 1, 1],
             # alphas=[1, 1, 1, 100],
             # low=[-0.35, 0.22, 0, 0.17, 70],
-            low=[-0.39, 0.22, 0, 0.20, 160],
-            high=[0.39, 0.65, 2 * np.pi, 0.20, 160],
+            low=[-0.39, 0.30, 0, 0.20, 160],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 160],
             param_bound=[1, 1, 1, 1, 1],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
@@ -257,20 +257,20 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
-        if episode_end and False:
+        too_fast = 0.0
+        if episode_end:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep47.
             speed_limit = 0.63  # m/s
-            max_speed_penality = -10
-            reward += (
-                np.tanh(max(self.ee_speeds) - speed_limit + 1) * max_speed_penality
-            )
-            # subtract y-intercept of speed penality
-            reward += np.tanh(0 - speed_limit + 1) * max_speed_penality
+            max_speed = max(self.ee_speeds)
+            reward -= max_speed * 5
+            if max_speed > speed_limit:
+                too_fast = 1.0
+                reward -= 10
 
-            # Also make sure we stop at the end of the episode
-            reward -= 10 * speed
+            ## Also make sure we stop at the end of the episode
+            # reward -= 10 * speed
 
         # calculate power cost
         self._episode_energy += speed**2
@@ -299,6 +299,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "is_success": is_success,
                 "num_steps": self._steps,
                 "end_speed": speed,
+                "too_fast": too_fast,
                 "max_speed": max(self.ee_speeds),
             }
             infos.update(self.doraemon.param_dict())
