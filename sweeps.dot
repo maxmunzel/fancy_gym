@@ -60,6 +60,8 @@ digraph Sweeps {
     "Sweep67" [label=<Sweep67 - BB <BR/> 55's MPs, 64's Training, No DR, Sparse/Dense Rewards >];
     "Sweep68" [label=<Sweep68 - BB <BR/> 67 but harsher rotation, no speed penality, varying weight_scales >];
     "Sweep69" [label=<Sweep69 - BB <BR/> 68 but with steppy max speed penality, smaller workspace >];
+    "Sweep70" [label=<Sweep70 - BB <BR/> 69 but different Training Hypers >];
+    "Sweep72" [label=<Sweep72 - BB <BR/> 69 but kp randomization, kps based on 71 rollouts, greater high speed limit and high speed penality >];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -122,5 +124,7 @@ digraph Sweeps {
     "Sweep64" -> "Sweep67"
     "Sweep67" -> "Sweep68"
     "Sweep68" -> "Sweep69"
+    "Sweep69" -> "Sweep70"
+    "Sweep70" -> "Sweep72"
 }
 
