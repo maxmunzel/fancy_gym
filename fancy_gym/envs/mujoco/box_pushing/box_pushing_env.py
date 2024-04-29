@@ -105,12 +105,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1],
-            # alphas=[1, 1, 1, 100],
-            # low=[-0.35, 0.22, 0, 0.17, 70],
-            low=[-0.39, 0.30, 0, 0.20, 160],
-            high=[0.39, 0.67, 2 * np.pi, 0.20, 160],
-            param_bound=[1, 1, 1, 1, 1],
+            alphas=[1, 1, 1, 1, 100],
+            low=[-0.39, 0.30, 0, 0.20, 50],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 100],
+            param_bound=[1, 1, 1, 1, 100],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=self.np_random.integers(0, 9999999),
         )
@@ -120,7 +118,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dist=dist,
             k=200,
             kl_bound=0.2,
-            target_success_rate=0.3,
+            target_success_rate=0.2,
         )
         # make it a little simpler for me to write the ymls
         # print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
@@ -261,13 +259,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         if episode_end:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
-            # during the rollouts of Sweep47.
-            speed_limit = 0.63  # m/s
+            # during the rollouts of Sweep70.
+            speed_limit = 0.8  # m/s
             max_speed = max(self.ee_speeds)
-            reward -= max_speed * 5
+            reward -= max_speed * 2
             if max_speed > speed_limit:
                 too_fast = 1.0
-                reward -= 10
+                reward -= max_speed * 5
+                reward -= 20
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -297,6 +296,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "box_goal_rot_dist": box_goal_quat_dist,
                 "episode_energy": 0.0 if not episode_end else self._episode_energy,
                 "is_success": is_success,
+                "is_real_success": is_success and not too_fast,
                 "num_steps": self._steps,
                 "end_speed": speed,
                 "too_fast": too_fast,
