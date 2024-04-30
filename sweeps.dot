@@ -62,6 +62,7 @@ digraph Sweeps {
     "Sweep69" [label=<Sweep69 - BB <BR/> 68 but with steppy max speed penality, smaller workspace >];
     "Sweep70" [label=<Sweep70 - BB <BR/> 69 but different Training Hypers >];
     "Sweep72" [label=<Sweep72 - BB <BR/> 69 but kp randomization, kps based on 71 rollouts, greater high speed limit and high speed penality >];
+    "Sweep73" [label=<Sweep73 - BB <BR/> 72 but actually enable Doraemon >];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -126,5 +127,6 @@ digraph Sweeps {
     "Sweep68" -> "Sweep69"
     "Sweep69" -> "Sweep70"
     "Sweep70" -> "Sweep72"
+    "Sweep70" -> "Sweep73"
 }
 

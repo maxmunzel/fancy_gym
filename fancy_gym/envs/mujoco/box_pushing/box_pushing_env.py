@@ -332,7 +332,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            # self.doraemon.update_dist()
+            self.doraemon.update_dist()
         if self.trace is not None:
             self.trace.save()
         # rest box to initial position
