@@ -110,8 +110,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             high=[0.39, 0.67, 2 * np.pi, 0.20, 100],
             param_bound=[1, 1, 1, 1, 100],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
-            seed=self.np_random.integers(0, 9999999),
+            seed=42,
         )
+        dist.random = self.np_random
         if redis_connection is not None:
             dist.set_params(np.ones_like(dist.get_params()))
         self.doraemon = Doraemon(
@@ -124,6 +125,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         # print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
         self.randomize()
         self.reset_model()
+        print(f"Post-init random number: {self.np_random.integers(0, 999999)}")
 
     def randomize(self):
         self.sample, self.sample_dict = self.doraemon.dist.sample_dict()
@@ -287,6 +289,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if episode_end and box_goal_pos_dist < 0.05 and box_goal_quat_dist < 0.5
             else False
         )
+        is_real_success = is_success and not too_fast
+
+        if is_real_success:
+            reward += 30
+
         if self.doraemon is None:
             infos = {}
         else:
@@ -296,7 +303,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "box_goal_rot_dist": box_goal_quat_dist,
                 "episode_energy": 0.0 if not episode_end else self._episode_energy,
                 "is_success": is_success,
-                "is_real_success": is_success and not too_fast,
+                "is_real_success": is_real_success,
                 "num_steps": self._steps,
                 "end_speed": speed,
                 "too_fast": too_fast,
@@ -304,7 +311,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             }
             infos.update(self.doraemon.param_dict())
 
-        self.last_episode_successful = is_success
+        self.last_episode_successful = is_real_success
 
         if redis_connection is not None:
             self.push_to_redis()
