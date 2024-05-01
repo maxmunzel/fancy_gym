@@ -338,6 +338,11 @@ for alpha in range(5, 20):
                         "num_basis": 5,
                         # 'num_basis_zero_start': 1,
                     },
+                    "black_box_kwargs": {
+                        "replanning_schedule": lambda pos, vel, obs, action, t: t % 50
+                        == 0,
+                        "condition_on_desired": True,
+                    },
                     "random_init": True,
                 },
             )
