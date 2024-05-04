@@ -52,7 +52,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.throttle = None
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
-        self.trace = None
         self._steps = 0
         self.init_qpos_box_pushing = np.array(
             [
@@ -105,10 +104,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 100],
+            alphas=[1, 1, 1, 1, 50],
             low=[-0.39, 0.30, 0, 0.20, 50],
             high=[0.39, 0.67, 2 * np.pi, 0.20, 100],
-            param_bound=[1, 1, 1, 1, 100],
+            param_bound=[1, 1, 1, 1, 50],
             names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=42,
         )
@@ -339,9 +338,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            self.doraemon.update_dist()
-        if self.trace is not None:
-            self.trace.save()
+            try:
+                self.doraemon.update_dist()
+            except Exception as e:
+                print(f"update_dist() failed: {e}")
+
         # rest box to initial position
         box_init_pos = (
             self.sample_context()

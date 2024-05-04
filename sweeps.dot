@@ -65,6 +65,7 @@ digraph Sweeps {
     "Sweep73" [label=<Sweep73 - BB <BR/> 72 but actually enable Doraemon >];
     "Sweep74" [label=<Sweep74 - BB <BR/> 72 but full length, add reward for is_real_success >];
     "Sweep75" [label=<Sweep75 - RE <BR/> 74 but Replanning >];
+    "Sweep76" [label=<Sweep76 - RE <BR/> 75 but more initial kp randomization>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -132,5 +133,6 @@ digraph Sweeps {
     "Sweep72" -> "Sweep73"
     "Sweep72" -> "Sweep74"
     "Sweep72" -> "Sweep75"
+    "Sweep74" -> "Sweep76"
 }
 
