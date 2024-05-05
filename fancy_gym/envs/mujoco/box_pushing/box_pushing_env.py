@@ -174,14 +174,16 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body("box_0").xpos[2] = -0.5
                 return box_pos, box_quat
 
-    def push_to_redis(self):
+    def push_to_redis(self, action):
         assert redis_connection is not None
         q = json.dumps(list(self.data.qpos.copy()))
         v = json.dumps(list(self.data.qvel.copy()))
         x, y, _ = self.data.body("finger").xpos.copy()
         payload = {
-            "x": x,
-            "y": y,
+            "x": float(action[0]),
+            "y": float(action[1]),
+            "x_finger": x,
+            "y_finger": y,
             "q": q,
             "v": v,
             "session": self.session,
@@ -268,6 +270,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 too_fast = 1.0
                 reward -= max_speed * 5
                 reward -= 20
+            print(f"Max Speed: {max_speed:.2f}")
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -313,7 +316,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.last_episode_successful = is_real_success
 
         if redis_connection is not None:
-            self.push_to_redis()
+            self.push_to_redis(action)
             if episode_end:
                 feedback = {k: float(v) for k, v in infos.items()}
                 feedback["reward"] = reward
