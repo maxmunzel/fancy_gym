@@ -66,7 +66,8 @@ digraph Sweeps {
     "Sweep74" [label=<Sweep74 - BB <BR/> 72 but full length, add reward for is_real_success >];
     "Sweep75" [label=<Sweep75 - RE <BR/> 74 but Replanning >];
     "Sweep76" [label=<Sweep76 - RE <BR/> 75 but more initial kp randomization>];
-    "Sweep76" [label=<Sweep77 - RE <BR/> 76 but log idle_time, uniform basis_scale>];
+    "Sweep77" [label=<Sweep77 - RE <BR/> 76 but log idle_time, uniform basis_scale>];
+    "Sweep78" [label=<Sweep78 - RE <BR/> 77 but duration 4>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -136,5 +137,6 @@ digraph Sweeps {
     "Sweep72" -> "Sweep75"
     "Sweep74" -> "Sweep76"
     "Sweep76" -> "Sweep77"
+    "Sweep77" -> "Sweep78"
 }
 
