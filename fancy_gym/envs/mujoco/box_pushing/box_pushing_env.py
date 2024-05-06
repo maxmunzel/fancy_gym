@@ -259,6 +259,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             reward = -50
 
         too_fast = 0.0
+        idle_time = np.mean(np.array(self.ee_speeds) <= 0.05)
         if episode_end:
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
@@ -271,6 +272,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 reward -= max_speed * 5
                 reward -= 20
             print(f"Max Speed: {max_speed:.2f}")
+            print(f"Idle time: {idle_time:.2f}")
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -310,6 +312,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "end_speed": speed,
                 "too_fast": too_fast,
                 "max_speed": max(self.ee_speeds),
+                "idle_time": idle_time,
             }
             infos.update(self.doraemon.param_dict())
 
