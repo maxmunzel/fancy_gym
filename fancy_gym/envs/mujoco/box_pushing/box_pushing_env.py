@@ -98,7 +98,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         # After the super messed it up
         self.action_space = spaces.Box(
-            low=np.array([0.35, -0.37]), high=np.array([0.65, 0.37])
+            low=np.array([-np.inf, -np.inf]), high=np.array([np.inf, np.inf])
         )
         self.observation_space = spaces.Box(
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
@@ -192,6 +192,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         redis_connection.xadd("cart_cmd", payload)
 
     def step(self, action):
+        action_clipped = np.clip(action, a_min=[0.35, -0.37], a_max=[0.65, 0.37])
+        clipping_dist = np.linalg.norm(action - action_clipped)
+        action = action_clipped
         if redis_connection is not None:
             if self.throttle is None:
                 self.throttle = Throttle(target_hz=1 / self.dt, busy_wait=False)
@@ -258,6 +261,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
+        reward -= clipping_dist
         too_fast = 0.0
         idle_time = np.mean(np.array(self.ee_speeds) <= 0.05)
         if episode_end:
@@ -314,6 +318,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "too_fast": too_fast,
                 "max_speed": max(self.ee_speeds),
                 "idle_time": idle_time,
+                "clipping_dist": clipping_dist,
             }
             infos.update(self.doraemon.param_dict())
 
