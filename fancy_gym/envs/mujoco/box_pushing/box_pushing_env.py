@@ -273,6 +273,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 reward -= 20
             print(f"Max Speed: {max_speed:.2f}")
             print(f"Idle time: {idle_time:.2f}")
+            print(f"Target_pos: ", target_pos)
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed

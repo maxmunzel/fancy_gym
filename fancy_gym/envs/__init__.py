@@ -261,7 +261,7 @@ DEFAULT_BB_DICT_ProDMP = {
     "black_box_kwargs": {},
 }
 # Max
-for alpha in range(5, 20):
+for alpha in range(5, 30):
     for w_scale in [1, 3, 10]:
         for g_scale in [1, 3, 10]:
             register(
@@ -333,7 +333,7 @@ for alpha in range(5, 20):
                     "random_init": True,
                 },
             )
-for alpha in range(5, 20):
+for alpha in range(5, 30):
     for w_scale in [1, 3, 10]:
         for g_scale in [1, 3, 10]:
             register(
