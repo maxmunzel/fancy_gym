@@ -69,6 +69,7 @@ digraph Sweeps {
     "Sweep77" [label=<Sweep77 - RE <BR/> 76 but log idle_time, uniform basis_scale>];
     "Sweep78" [label=<Sweep78 - RE <BR/> 77 but duration 4>];
     "Sweep79" [label=<Sweep78 - RE <BR/> 76 but with clip_penality>];
+    "Sweep80" [label=<Sweep80 - RE <BR/> 79 but 4s>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -140,5 +141,7 @@ digraph Sweeps {
     "Sweep76" -> "Sweep77"
     "Sweep77" -> "Sweep78"
     "Sweep76" -> "Sweep79"
+    "Sweep78" -> "Sweep80"
+    "Sweep79" -> "Sweep80"
 }
 
