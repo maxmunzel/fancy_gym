@@ -72,6 +72,7 @@ digraph Sweeps {
     "Sweep80" [label=<Sweep80 - BB <BR/> 79 but 4s>];
     "Sweep81" [label=<Sweep81 - RE <BR/> 80 but Replanning>];
     "Sweep82" [label=<Sweep82 - BB <BR/> 80 but Mocap Noise and softer max_speed penality>];
+    "Sweep83" [label=<Sweep83 - BB <BR/> 82 but friction randomization target_success 0.8>];
 
     // Edges
     "Sweep8" -> "Sweep9"
