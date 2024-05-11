@@ -65,11 +65,12 @@ digraph Sweeps {
     "Sweep73" [label=<Sweep73 - BB <BR/> 72 but actually enable Doraemon >];
     "Sweep74" [label=<Sweep74 - BB <BR/> 72 but full length, add reward for is_real_success >];
     "Sweep75" [label=<Sweep75 - RE <BR/> 74 but Replanning >];
-    "Sweep76" [label=<Sweep76 - RE <BR/> 75 but more initial kp randomization>];
-    "Sweep77" [label=<Sweep77 - RE <BR/> 76 but log idle_time, uniform basis_scale>];
-    "Sweep78" [label=<Sweep78 - RE <BR/> 77 but duration 4>];
-    "Sweep79" [label=<Sweep78 - RE <BR/> 76 but with clip_penality>];
-    "Sweep80" [label=<Sweep80 - RE <BR/> 79 but 4s>];
+    "Sweep76" [label=<Sweep76 - BB <BR/> 75 but more initial kp randomization>];
+    "Sweep77" [label=<Sweep77 - BB <BR/> 76 but log idle_time, uniform basis_scale>];
+    "Sweep78" [label=<Sweep78 - BB <BR/> 77 but duration 4>];
+    "Sweep79" [label=<Sweep78 - BB <BR/> 76 but with clip_penality>];
+    "Sweep80" [label=<Sweep80 - BB <BR/> 79 but 4s>];
+    "Sweep81" [label=<Sweep81 - RE <BR/> 80 but Replanning>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -143,5 +144,8 @@ digraph Sweeps {
     "Sweep76" -> "Sweep79"
     "Sweep78" -> "Sweep80"
     "Sweep79" -> "Sweep80"
+    "Sweep80" -> "Sweep81"
+    "Sweep75" -> "Sweep81"
+    "Sweep80" -> "Sweep82"
 }
 

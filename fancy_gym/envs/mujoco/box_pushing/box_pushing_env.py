@@ -387,9 +387,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             print(f"Reset done, finger @ {x:.2f} {y:.2f}")
 
         else:
+            box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
             self.data.joint("box_rot_joint").qpos = self.sample_dict["start_theta"]
-            self.data.joint("box_x_joint").qpos = box_init_pos[0]
-            self.data.joint("box_y_joint").qpos = box_init_pos[1]
+            self.data.joint("box_x_joint").qpos = box_init_pos[0] + box_err[0]
+            self.data.joint("box_y_joint").qpos = box_init_pos[1] + box_err[1]
             self.data.joint("finger_x_joint").qpos = box_init_pos[0]
             self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
@@ -449,10 +450,27 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         raise NotImplementedError
 
     def _get_obs(self):
+        finger_pos = self.data.body("finger").xpos[:2].copy()
+        box_pos = self.data.body("box_0").xpos[:2].copy()
+
+        # Simulate measurement error. We assume perfect finger positions and box rotations.
+        # Box positions are assumed to have additive noise.
+
+        if self._steps == 0:
+            # At the first step, the finger is put where we think the box is.
+            # Therefore the agent always sees box_measured == finger.
+            # We don't need to simulate measurement noise here,
+            # as the reset_model() method will place the finger slightly off-center for us.
+            box_pos_measured = finger_pos.copy()
+        else:
+            # In all other steps, take the simulated box and add noise
+            box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
+            box_pos_measured = box_pos + box_err
+
         obs = np.concatenate(
             [
-                self.data.body("finger").xpos[:2].copy(),
-                self.data.body("box_0").xpos[:2].copy(),  # position of box
+                finger_pos,
+                box_pos_measured,
                 self.data.body("replan_target_pos")
                 .xpos[:2]
                 .copy(),  # position of target
