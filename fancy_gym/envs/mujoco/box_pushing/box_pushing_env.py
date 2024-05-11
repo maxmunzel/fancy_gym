@@ -270,7 +270,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # during the rollouts of Sweep70.
             speed_limit = 0.8  # m/s
             max_speed = max(self.ee_speeds)
-            reward -= max_speed * 2
+            reward -= max_speed
             if max_speed > speed_limit:
                 too_fast = 1.0
                 reward -= max_speed * 5
