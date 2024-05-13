@@ -297,14 +297,14 @@ for alpha in range(5, 30):
                 },
             )
             register(
-                id=f"Sweep68-alpha{alpha}-tau5-ws{w_scale}-gs{g_scale}-replan",
+                id=f"Sweep78-alpha{alpha}-tau5-ws{w_scale}-gs{g_scale}-replan",
                 entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
                 kwargs={
                     "name": "BoxPushingTemporalSparse-v0",
                     "wrappers": [mujoco.box_pushing.MPWrapper],
                     "trajectory_generator_kwargs": {
                         "trajectory_generator_type": "prodmp",
-                        "duration": 8.0,
+                        "duration": 4.0,
                         "action_dim": 2,
                         "weight_scale": w_scale / 10,
                         "auto_scale_basis": True,
@@ -314,7 +314,7 @@ for alpha in range(5, 30):
                     },
                     "phase_generator_kwargs": {
                         "phase_generator_type": "exp",
-                        "tau": 5,
+                        "tau": 2.4,
                     },
                     "controller_kwargs": {
                         "controller_type": "position",
