@@ -38,9 +38,9 @@ try:
         joy = np.array([y_axis, x_axis])
 
         finger_pos = env.data.body("finger").xpos.copy()[:2]
-        action = finger_pos + 2 * joy
+        action = finger_pos + 0.05 * joy
         action *= 1
-        obs, reward, done, info = env.step(joy)
+        obs, reward, done, info = env.step(action)
 
         env.render(mode="human")
 finally:

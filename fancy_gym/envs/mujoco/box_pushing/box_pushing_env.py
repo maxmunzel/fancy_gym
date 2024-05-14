@@ -25,7 +25,7 @@ from typing import Tuple, Optional, Union
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 400
+MAX_EPISODE_STEPS_BOX_PUSHING = 200
 
 BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
@@ -104,18 +104,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1, 100],
-            low=[-0.39, 0.30, 0, 0.20, 50, 0.9],
-            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 1.1],
-            param_bound=[1, 1, 1, 1, 1, 100],
-            names=[
-                "start_y",
-                "start_x",
-                "start_theta",
-                "box_mass_factor",
-                "kp",
-                "friction_factor",
-            ],
+            alphas=[1, 1, 1, 1, 50],
+            low=[-0.39, 0.30, 0, 0.20, 50],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 100],
+            param_bound=[1, 1, 1, 1, 50],
+            names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
             seed=42,
         )
         dist.random = self.np_random
@@ -156,11 +149,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 old = 'mass="0.5308'
                 assert old in content
                 new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
-                content = content.replace(old, new)
-
-                old = 'friction="0.4296'
-                assert old in content
-                new = f'friction="{0.4296 * self.sample_dict["friction_factor"]}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
