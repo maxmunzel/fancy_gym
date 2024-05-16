@@ -104,11 +104,18 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1],
-            low=[-0.39, 0.30, 0, 0.20, 50],
-            high=[0.39, 0.67, 2 * np.pi, 0.20, 100],
-            param_bound=[1, 1, 1, 1, 1],
-            names=["start_y", "start_x", "start_theta", "box_mass_factor", "kp"],
+            alphas=[1, 1, 1, 1, 1, 50],
+            low=[-0.39, 0.30, 0, 0.20, 50, 0],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 0.1],
+            param_bound=[1, 1, 1, 1, 1, 50],
+            names=[
+                "start_y",
+                "start_x",
+                "start_theta",
+                "box_mass_factor",
+                "kp",
+                "rot_damping",
+            ],
             seed=42,
         )
         dist.random = self.np_random
@@ -118,7 +125,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dist=dist,
             k=200,
             kl_bound=0.2,
-            target_success_rate=0.6,
+            target_success_rate=0.5,
         )
         # make it a little simpler for me to write the ymls
         # print("\n".join(f'"{k}",' for k in self.doraemon.param_dict().keys()))
@@ -149,6 +156,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 old = 'mass="0.5308'
                 assert old in content
                 new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
+                content = content.replace(old, new)
+
+                old = 'damping=".1'
+                assert old in content
+                new = f'damping="{self.sample_dict["rot_damping"]}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
