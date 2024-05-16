@@ -11,7 +11,7 @@
             <joint name="box_z_joint" type="slide" pos="0 0 0" axis="0 0 1" />
             <joint name="box_roll_joint" type="hinge" pos="0 0 0" axis="1 0 0" limited="true" range="-.15 .15"/>
             <joint name="box_pitch_joint" type="hinge" pos="0 0 0" axis="0 1 0" limited="true" range="-.15 .15"/>
-            <joint name="box_rot_joint" type="hinge" pos="0 0 0" axis="0 0 1" damping=".05"/>
+            <joint name="box_rot_joint" type="hinge" pos="0 0 0" axis="0 0 1" damping=".1"/>
         </body>
     </worldbody>
 </mujoco>
