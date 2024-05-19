@@ -80,6 +80,9 @@ digraph Sweeps {
     "Sweep88" [label=<Sweep88 - BB <BR/> 87, but higher rotation damping (.01 -> .05) >];
     "Sweep89" [label=<Sweep89 - BB <BR/> 88, but higher rotation damping (.05 -> .10) >];
     "Sweep90" [label=<Sweep90 - BB <BR/> 86, but randomize rotation damping. target_success = .5>];
+    "Sweep92" [label=<Sweep92 - RE <BR/> 90 but Replanning];
+    "Sweep93" [label=<Sweep93 - BB <BR/> 90, but 8s>];
+    "Sweep94" [label=<Sweep94 - RE <BR/> 92, but less rotation damping>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -164,5 +167,9 @@ digraph Sweeps {
     "Sweep86" -> "Sweep88"
     "Sweep88" -> "Sweep89"
     "Sweep86" -> "Sweep90"
+    "Sweep90" -> "Sweep92"
+    "Sweep90" -> "Sweep93"
+    "Sweep82" -> "Sweep92"
+    "Sweep92" -> "Sweep94"
 }
 
