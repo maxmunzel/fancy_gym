@@ -1,0 +1,175 @@
+digraph Sweeps {
+    // Nodes
+    node [shape=plaintext]
+    "Sweep8"  [label=<Sweep8 - BB>];
+    "Sweep9"  [label=<Sweep9 - BB - Hongyi Params 2h>];
+    "Sweep10" [label=<Sweep10 - BB <BR/> Hongyi Params 12h>];
+    "Sweep11" [label=<Sweep11 - BB <BR/> learn_tau (failed)>];
+    "Sweep12" [label=<Sweep12 - BB <BR/> best of sweep 8>];
+    "Sweep13" [label=<Sweep13 - BB <BR/> 12, with 2D-BoxPushing-Pos3 Training Hyperparams>];
+    "Sweep14" [label=<Sweep14 - BB <BR/> Best of 13 but with random Start>];
+    "Sweep15" [label=<Sweep15 - BB <BR/> >];
+    "Sweep16" [label=<Sweep16 - BB <BR/> Added Energy Penality>];
+    "Sweep17" [label=<Sweep17 - BB <BR/> randomized Box Weight, longer episodes>];
+    "Sweep18" [label=<Sweep18 - BB <BR/> Go Back to sweep16 env but keep randomization>];
+    "Sweep19" [label=<Sweep19 - BB <BR/> 3-Basis, handpicked tau, 4s episode length, mass randomization, energy-penality>];
+    "Sweep20" [label=<Sweep20 - BB <BR/> 19, but Randomize friction instead of mass>];
+    "Sweep21" [label=<Sweep21 - BB <BR/> Replan>];
+    "Sweep22" [label=<Sweep22 - BB <BR/> 18, but with Doraemon>];
+    "Sweep23" [label=<Sweep23 - BB <BR/> 22, but with actual kl-div, target=50%, kl_bound=0.01>];
+    "Sweep24" [label=<Sweep24 - BB <BR/> 23, but handle failed optimization + mass rand, kl_bound=0.02>];
+    "Sweep25" [label=<Sweep25 - BB <BR/> 24, but target=20%>];
+    "Sweep26" [label=<Sweep26 - BB <BR/> 24, but target=30%>];
+    "Sweep27" [label=<Sweep27 - BB <BR/> 24, but bounded Doraemon, target=40%, n_env=4>];
+    "Sweep28" [label=<Sweep28 - RE <BR/> Replan, Sweep21 but more compute>];
+    "Sweep29" [label=<Sweep29 - BB <BR/> Sweep20 but much more compute + disabled Doraemon, correct friction>];
+    "Sweep30" [label=<Sweep30 - BB <BR/> Sweep29, but smaller train_steps. (no effect)>];
+    "Sweep31" [label=<Sweep31 - BB <BR/> Best Run of Sweep17, with lots of compute>];
+    "Sweep32" [label=<Sweep32 - RE <BR/> Best Run of Sweep17, with lots of compute and replanning>];
+    "Sweep33" [label=<Sweep33 - RE <BR/> Sweep32 (Replan) but hopefully faster (Hongyi config)>];
+    "Sweep34" [label=<Sweep34 - BB <BR/> Sweep31 but with mass randomization>];
+    "Sweep35" [label=<Sweep35 - BB <BR/> Sweep34 but less randomization>];
+    "Sweep36" [label=<Sweep36 - RE <BR/> Sweep33 but with mass randomization>];
+    "Sweep37" [label=<Sweep37 - BB <BR/> Sweep34 but bigger Policy Net>];
+    "Sweep38" [label=<Sweep38 - BB <BR/> Sweep37 but Better taus, 5 basis, smaller workarea>];
+    "Sweep39" [label=<Sweep39 - RE <BR/> Sweep36 but Better taus, 5 basis, smaller workarea>];
+    "Sweep40" [label=<Sweep40 - BB <BR/> Sweep38 but doubled mean/cov bound>];
+    "Sweep41" [label=<Sweep41 - RE <BR/> Sweep39 but doubled mean/cov bound>];
+    "Sweep42" [label=<Sweep42 - BB <BR/> Sweep38 but basis 4 again>];
+    "Sweep43" [label=<Sweep43 - RE <BR/> Sweep39 but basis 4 again>];
+    "Sweep44" [label=<Sweep44 - BB <BR/> Best of Sweep18 but double the time, double the tau, new env>];
+    "Sweep45" [label=<Sweep45 - BB <BR/> Sweep37 but double the time (8s), double the tau, new 15 damping>];
+    "Sweep46" [label=<Sweep46 - BB <BR/> Sweep45 20 damping>];
+    "Sweep47" [label=<Sweep47 - BB <BR/> New Dynamics! >];
+    "Sweep48" [label=<Sweep48 - BB <BR/> 47, but disable speed penality  >];
+    "Sweep49" [label=<Sweep49 - BB <BR/> 48, but working speed penality and bigger tau  >];
+    "Sweep51" [label=<Sweep51 - BB <BR/> Improved Box Dynamics, Higher Tau>];
+    "Sweep52" [label=<Sweep52 - BB <BR/> Sweep over taus, basis. Less initial randomization>];
+    "Sweep53" [label=<Sweep53 - BB <BR/> weight_scale=1,1,1,1,0 >];
+    "Sweep54" [label=<Sweep54 - BB <BR/> increased max_speed penality>];
+    "Sweep55" [label=<Sweep55 - BB <BR/> Different Alphas, Different Architectures>];
+    "Sweep56" [label=<Sweep56 - BB <BR/> Proper Sparse Rewards, softer speed penality>];
+    "Sweep57" [label=<Sweep57 - BB <BR/> Bigger Workspace, Disabled kp-randomization and Speed Penality>];
+    "Sweep60" [label=<Sweep60 - BB <BR/> 60 but basis 6>];
+    "Sweep61" [label=<Sweep61 - BB <BR/> higher tau's don't need the weight_scale_mask>];
+    "Sweep62" [label=<Sweep62 - BB <BR/> Sweep61 but without Doraemon>];
+    "Sweep63" [label=<Sweep63 - BB <BR/> Softer Speed Penality >];
+    "Sweep64" [label=<Sweep64 - BB <BR/> Higher Mean/Cov Bound and LR >];
+    "Sweep65" [label=<Sweep65 - RE <BR/> 63 but with Replanning >];
+    "Sweep66" [label=<Sweep66 - BB <BR/> 64 but with Doraemon as Curriculum >];
+    "Sweep67" [label=<Sweep67 - BB <BR/> 55's MPs, 64's Training, No DR, Sparse/Dense Rewards >];
+    "Sweep68" [label=<Sweep68 - BB <BR/> 67 but harsher rotation, no speed penality, varying weight_scales >];
+    "Sweep69" [label=<Sweep69 - BB <BR/> 68 but with steppy max speed penality, smaller workspace >];
+    "Sweep70" [label=<Sweep70 - BB <BR/> 69 but different Training Hypers >];
+    "Sweep72" [label=<Sweep72 - BB <BR/> 69 but kp randomization, kps based on 71 rollouts, greater high speed limit and high speed penality >];
+    "Sweep73" [label=<Sweep73 - BB <BR/> 72 but actually enable Doraemon >];
+    "Sweep74" [label=<Sweep74 - BB <BR/> 72 but full length, add reward for is_real_success >];
+    "Sweep75" [label=<Sweep75 - RE <BR/> 74 but Replanning >];
+    "Sweep76" [label=<Sweep76 - BB <BR/> 75 but more initial kp randomization>];
+    "Sweep77" [label=<Sweep77 - BB <BR/> 76 but log idle_time, uniform basis_scale>];
+    "Sweep78" [label=<Sweep78 - BB <BR/> 77 but duration 4>];
+    "Sweep79" [label=<Sweep78 - BB <BR/> 76 but with clip_penality>];
+    "Sweep80" [label=<Sweep80 - BB <BR/> 79 but 4s>];
+    "Sweep81" [label=<Sweep81 - RE <BR/> 80 but Replanning>];
+    "Sweep82" [label=<Sweep82 - BB <BR/> 80 but Mocap Noise and softer max_speed penality>];
+    "Sweep83" [label=<Sweep83 - BB <BR/> 82 but friction randomization target_success 0.6>];
+    "Sweep84" [label=<Sweep84 - BB <BR/> 83, but start with uniform kp>];
+    "Sweep85" [label=<Sweep85 - BB <BR/> 84, but 8s>];
+    "Sweep86" [label=<Sweep86 - BB <BR/> 82, but with rotation damping, target_success 0.6 >];
+    "Sweep87" [label=<Sweep87 - BB <BR/> 86, but start with uniform kp >];
+    "Sweep88" [label=<Sweep88 - BB <BR/> 87, but higher rotation damping .01 - .05 >];
+    "Sweep89" [label=<Sweep89 - BB <BR/> 88, but higher rotation damping .05 - .10 >];
+    "Sweep90" [label=<Sweep90 - BB <BR/> 86, but randomize rotation damping. target_success = .5>];
+    "Sweep92" [label=<Sweep92 - RE <BR/> 90 but Replanning>];
+    "Sweep93" [label=<Sweep93 - BB <BR/> 90, but 8s>];
+    "Sweep94" [label=<Sweep94 - RE <BR/> 92, but less rotation damping>];
+
+    // Edges
+    "Sweep8" -> "Sweep9"
+    "Sweep9" -> "Sweep10"
+    "Sweep10" -> "Sweep11"
+    "Sweep8" -> "Sweep12"
+    "Sweep12" -> "Sweep13"
+    "Sweep13" -> "Sweep14"
+    "Sweep16" -> "Sweep18"
+    "Sweep18" -> "Sweep19"
+    "Sweep19" -> "Sweep20"
+    "Sweep21" -> "Sweep28"
+    "Sweep20" -> "Sweep29"
+    "Sweep29" -> "Sweep30"
+    "Sweep17" -> "Sweep31"
+    "Sweep31" -> "Sweep32"
+    "Sweep32" -> "Sweep33"
+    "Sweep31" -> "Sweep34"
+    "Sweep34" -> "Sweep35"
+    "Sweep33" -> "Sweep36"
+    "Sweep34" -> "Sweep37"
+    "Sweep37" -> "Sweep38"
+    "Sweep36" -> "Sweep39"
+    "Sweep38" -> "Sweep40"
+    "Sweep39" -> "Sweep41"
+    "Sweep38" -> "Sweep42"
+    "Sweep39" -> "Sweep43"
+    "Sweep18" -> "Sweep22"
+    "Sweep22" -> "Sweep23"
+    "Sweep23" -> "Sweep24"
+    "Sweep24" -> "Sweep25"
+    "Sweep24" -> "Sweep26"
+    "Sweep24" -> "Sweep27"
+    "Sweep18" -> "Sweep44"
+    "Sweep14" -> "Sweep15"
+    "Sweep15" -> "Sweep16"
+    "Sweep16" -> "Sweep17"
+    "Sweep20" -> "Sweep21"
+    "Sweep37" -> "Sweep45"
+    "Sweep45" -> "Sweep46"
+    "Sweep46" -> "Sweep47"
+    "Sweep47" -> "Sweep48"
+    "Sweep48" -> "Sweep49"
+    "Sweep49" -> "Sweep50"
+    "Sweep50" -> "Sweep51"
+    "Sweep51" -> "Sweep52"
+    "Sweep52" -> "Sweep53"
+    "Sweep53" -> "Sweep54"
+    "Sweep54" -> "Sweep55"
+    "Sweep55" -> "Sweep56"
+    "Sweep56" -> "Sweep57"
+    "Sweep57" -> "Sweep60"
+    "Sweep60" -> "Sweep61"
+    "Sweep61" -> "Sweep62"
+    "Sweep62" -> "Sweep63"
+    "Sweep63" -> "Sweep64"
+    "Sweep63" -> "Sweep65"
+    "Sweep64" -> "Sweep66"
+    "Sweep55" -> "Sweep67"
+    "Sweep64" -> "Sweep67"
+    "Sweep67" -> "Sweep68"
+    "Sweep68" -> "Sweep69"
+    "Sweep69" -> "Sweep70"
+    "Sweep70" -> "Sweep72"
+    "Sweep72" -> "Sweep73"
+    "Sweep72" -> "Sweep74"
+    "Sweep72" -> "Sweep75"
+    "Sweep74" -> "Sweep76"
+    "Sweep76" -> "Sweep77"
+    "Sweep77" -> "Sweep78"
+    "Sweep76" -> "Sweep79"
+    "Sweep78" -> "Sweep80"
+    "Sweep79" -> "Sweep80"
+    "Sweep80" -> "Sweep81"
+    "Sweep75" -> "Sweep81"
+    "Sweep80" -> "Sweep82"
+    "Sweep82" -> "Sweep83"
+    "Sweep83" -> "Sweep84"
+    "Sweep84" -> "Sweep85"
+    "Sweep82" -> "Sweep86"
+    "Sweep86" -> "Sweep87"
+    "Sweep86" -> "Sweep88"
+    "Sweep88" -> "Sweep89"
+    "Sweep86" -> "Sweep90"
+    "Sweep90" -> "Sweep92"
+    "Sweep90" -> "Sweep93"
+    "Sweep82" -> "Sweep92"
+    "Sweep92" -> "Sweep94"
+}
+
