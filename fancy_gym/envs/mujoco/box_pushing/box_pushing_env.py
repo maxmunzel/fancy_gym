@@ -104,17 +104,17 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1, 100],
-            low=[-0.39, 0.30, 0, 0.20, 50, 0.9],
-            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 1.1],
-            param_bound=[1, 1, 1, 1, 1, 100],
+            alphas=[1, 1, 1, 1, 1, 50],
+            low=[-0.39, 0.30, 0, 0.20, 50, 0.1],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 0.3],
+            param_bound=[1, 1, 1, 1, 1, 50],
             names=[
                 "start_y",
                 "start_x",
                 "start_theta",
                 "box_mass_factor",
                 "kp",
-                "friction_factor",
+                "friction",
             ],
             seed=42,
         )
@@ -153,14 +153,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             with open(f"{d}/push_box.xml") as f_src:
                 content = f_src.read()
             with open(f"{d}/push_box.xml", "w") as f_dst:
-                old = 'mass="0.5308'
-                assert old in content
-                new = f'mass="{0.5308 * self.sample_dict["box_mass_factor"]}'
-                content = content.replace(old, new)
-
                 old = 'friction="0.4296'
                 assert old in content
-                new = f'friction="{0.4296 * self.sample_dict["friction_factor"]}'
+                new = f'friction="{self.sample_dict["friction"]}'
                 f_dst.write(content.replace(old, new))
 
             self.model = self._mujoco_bindings.MjModel.from_xml_path(self.model_path)
