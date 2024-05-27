@@ -84,6 +84,8 @@ digraph Sweeps {
     "Sweep93" [label=<Sweep93 - BB <BR/> 90, but 8s>];
     "Sweep94" [label=<Sweep94 - RE <BR/> 92, but less rotation damping>];
     "Sweep95" [label=<Sweep95 - BB <BR/> 85, but proper mass distribution and friction .1 to .3>];
+    "Sweep96" [label=<Sweep96 - BB <BR/> 95, but restrict start position and friction .1 to .4>];
+    "Sweep97" [label=<Sweep97 - BB <BR/> 96, but start with uniform friction randomization>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -173,5 +175,7 @@ digraph Sweeps {
     "Sweep82" -> "Sweep92"
     "Sweep92" -> "Sweep94"
     "Sweep85" -> "Sweep95"
+    "Sweep95" -> "Sweep96"
+    "Sweep95" -> "Sweep97"
 }
 
