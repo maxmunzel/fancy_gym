@@ -105,8 +105,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 1],
-            low=[-0.39, 0.48, 0, 0.20, 50, 0.1],
-            high=[0, 0.54, 2 * np.pi, 0.20, 100, 0.4],
+            low=[-0.3, 0.49, 0, 0.20, 50, 0.1],
+            high=[0.02, 0.51, 2 * np.pi, 0.20, 100, 0.5],
             param_bound=[1, 1, 1, 1, 1, 1],
             names=[
                 "start_y",
