@@ -6,6 +6,8 @@ import redis
 import random
 import numpy as np
 from pathlib import Path
+from scipy.spatial.transform import Rotation
+from scipy.optimize import minimize
 from gym import utils, spaces
 from gym.envs.mujoco import MujocoEnv
 from fancy_gym.envs.mujoco.box_pushing.throttle import Throttle
@@ -27,7 +29,6 @@ import mujoco
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 400
 
-BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
 if "REDIS_IP" in os.environ:
     redis_connection = redis.Redis(os.environ["REDIS_IP"], decode_responses=True)
@@ -49,6 +50,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
+        self.sim2obs = np.eye(4)
+        self.obs2sim = np.eye(4)
         self.throttle = None
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
@@ -105,8 +108,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 1],
-            low=[-0.3, 0.49, 0, 0.20, 50, 0.1],
-            high=[0.02, 0.51, 2 * np.pi, 0.20, 100, 0.5],
+            low=[-0.3, 0.2, 0, 0.20, 50, 0.1],
+            high=[0.3, 0.61, 2 * np.pi, 0.20, 100, 0.5],
             param_bound=[1, 1, 1, 1, 1, 1],
             names=[
                 "start_y",
@@ -199,6 +202,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         redis_connection.xadd("cart_cmd", payload)
 
     def step(self, action):
+        # projection
+        action = np.concatenate([action, [0, 1]])
+        action = self.obs2sim @ action
+        action = action[:2]
+
         action_clipped = np.clip(action, a_min=[0.35, -0.37], a_max=[0.65, 0.37])
         clipping_dist = np.linalg.norm(action - action_clipped)
         action = action_clipped
@@ -407,6 +415,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         #    box_target_pos = self.sample_context()
 
         # Derandomize
+        target_pos = np.array([0.51505285, 0.0, 0.0])
         self.data.body("replan_target_pos").xquat = box_target_pos = np.array(
             [0.51505285, 0.0, 0.0, 0]
             # [0.51505285, 0.0, 0.0, 0.85715842]
@@ -415,26 +424,58 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # [0.3186036 + 0.15, -0.25776725, -0.01]
             [0.4, 0, -0.01]
         )
-
-        # box_target_pos[0] = 0.4
-        # box_target_pos[1] = -0.3
-        # box_target_pos[-4:] = np.array([0.0, 0.0, 0.0, 1.0])
         self.model.body_pos[2] = box_target_pos[:3]
         self.model.body_quat[2] = box_target_pos[-4:]
         self.model.body_pos[3] = box_target_pos[:3]
         self.model.body_quat[3] = box_target_pos[-4:]
 
-        # set the robot to the right configuration (rod tip in the box)
-        box_init_pos[:3] + np.array([0.0, 0.0, 0.15])
-
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
         self._episode_energy = 0.0
 
+        self.sim2obs = self.calculate_sim2obs(box_init_pos[:3], target_pos)
+        self.obs2sim = np.linalg.inv(self.sim2obs)
+
         return self._get_obs()
 
+    @staticmethod
+    def calculate_sim2obs(box: np.ndarray, target: np.ndarray) -> np.ndarray:
+        # calculate the transform in three steps:
+        # 1. Translate so the target is in the center (m1)
+        # 2. Rotate (m2)
+        # 3. Translate back (m3)
+
+        m1 = np.eye(4)
+        m1[:3, 3] = target
+
+        m3 = np.eye(4)
+        m3[:3, 3] = -target
+
+        def z_rotation(a) -> np.ndarray:
+            # creates a 4x4 matrix representing a z-rotation of a radians
+            m = np.eye(4)
+            m[:3, :3] = Rotation.from_rotvec([0, 0, a]).as_matrix()
+            return m
+
+        box4 = np.concatenate([box, [1]]).reshape(4, 1)
+
+        def obj(a: np.ndarray) -> float:
+            # objective to calculate the rotation. Takes the roation in radians
+            # and returns the y position of the box after the rotation is applied.
+            # Rotating the box all the way to the left yields the minimal y position.
+            assert a.shape == (1,)
+            return (m1 @ z_rotation(a[0]) @ m3 @ box4)[1, 0]
+
+        res = minimize(obj, x0=[0], bounds=[(-np.pi, np.pi)])
+        assert res.success
+        m2 = z_rotation(res.x[0])
+        print(f"Rotation: {res.x[0]}")
+
+        res = m1 @ m2 @ m3
+        return res
+
     def sample_context(self):
-        pos = self.np_random.uniform(low=BOX_POS_BOUND[0], high=BOX_POS_BOUND[1])
+        pos = -0.01 * np.ones(3)
         pos[0] = self.sample_dict["start_x"]
         pos[1] = self.sample_dict["start_y"]
         theta = self.sample_dict["start_theta"]
@@ -474,17 +515,32 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
             box_pos_measured = box_pos + box_err
 
+        def proj_pos(pos):
+            pos = pos.flatten().copy()
+            assert pos.shape == (2,)
+            pos = np.concatenate([pos, [0, 1]])
+            pos = self.sim2obs @ pos
+            pos = pos[:2]
+            return pos
+
+        def proj_quat(quat):
+            quat = quat.flatten().copy()
+            assert quat.shape == (4,)
+            q = Rotation.from_quat(quat[[3, 0, 1, 2]])
+            r = Rotation.from_matrix(self.sim2obs[:3, :3])
+            return (r * q).as_quat()[[3, 0, 1, 2]]
+
         obs = np.concatenate(
             [
-                finger_pos,
-                box_pos_measured,
-                self.data.body("replan_target_pos")
-                .xpos[:2]
-                .copy(),  # position of target
-                self.data.body("box_0").xquat.copy(),  # orientation of box
-                self.data.body(
-                    "replan_target_pos"
-                ).xquat.copy(),  # orientation of target
+                proj_pos(finger_pos),
+                proj_pos(box_pos_measured),
+                proj_pos(
+                    self.data.body("replan_target_pos").xpos[:2]
+                ),  # position of target
+                proj_quat(self.data.body("box_0").xquat),  # orientation of box
+                proj_quat(
+                    self.data.body("replan_target_pos").xquat
+                ),  # orientation of target
             ]
         )
         obs = np.nan_to_num(obs, nan=0)

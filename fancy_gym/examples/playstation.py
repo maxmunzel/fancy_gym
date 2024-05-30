@@ -23,13 +23,14 @@ obs = env.reset(seed=42)
 throttle = Throttle(target_hz=50, busy_wait=False)
 try:
     while True:
-        throttle.tick()
+        # throttle.tick()
         for event in pygame.event.get():
             # If you want to handle specific events, you can do that here
             if event.type == pygame.JOYBUTTONDOWN:
                 if joystick.get_button(0):  # X button is typically indexed at 0
                     obs = env.reset()
                     cum_reward = 0
+                    print(obs)
             pass
 
         x_axis = joystick.get_axis(0)  # Left stick horizontal
