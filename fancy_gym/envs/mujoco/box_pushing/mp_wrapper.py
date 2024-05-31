@@ -37,7 +37,7 @@ class MPWrapper(RawInterfaceWrapper):
                 [
                     self.data.joint("finger_x_joint").qvel,
                     self.data.joint("finger_y_joint").qvel,
-                    [0, 1],
+                    [0, 0],
                 ]
             )
             @ self.env.sim2obs
