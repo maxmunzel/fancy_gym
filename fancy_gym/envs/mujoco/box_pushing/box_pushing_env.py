@@ -50,6 +50,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     """
 
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
+        self.clipping_sum = 0
         self.sim2obs = np.eye(4)
         self.obs2sim = np.eye(4)
         self.throttle = None
@@ -209,6 +210,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         action_clipped = np.clip(action, a_min=[0.35, -0.37], a_max=[0.65, 0.37])
         clipping_dist = np.linalg.norm(action - action_clipped)
+        self.clipping_sum += clipping_dist
         action = action_clipped
         if redis_connection is not None:
             if self.throttle is None:
@@ -290,9 +292,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 too_fast = 1.0
                 reward -= max_speed * 5
                 reward -= 20
-            print(f"Max Speed: {max_speed:.2f}")
-            print(f"Idle time: {idle_time:.2f}")
-            print(f"Target_pos: ", target_pos)
+            # print(f"Max Speed: {max_speed:.2f}")
+            # print(f"Idle time: {idle_time:.2f}")
+            # print(f"Target_pos: ", target_pos)
+            print(json.dumps({"max_speed": max_speed, "rotation": self.rotation, "clip": self.clipping_sum}))
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -357,6 +360,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return obs, reward, episode_end, infos
 
     def reset_model(self):
+        self.clipping_sum = 0
+        self.data.qvel[:] = 0
         if self.doraemon:
             self.doraemon.dist.random = self.np_random
         self.last_ee_pos = None
@@ -438,8 +443,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         return self._get_obs()
 
-    @staticmethod
-    def calculate_sim2obs(box: np.ndarray, target: np.ndarray) -> np.ndarray:
+    def calculate_sim2obs(self, box: np.ndarray, target: np.ndarray) -> np.ndarray:
         # calculate the transform in three steps:
         # 1. Translate so the target is in the center (m1)
         # 2. Rotate (m2)
@@ -469,7 +473,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         res = minimize(obj, x0=[0], bounds=[(-np.pi, np.pi)])
         assert res.success
         m2 = z_rotation(res.x[0])
-        print(f"Rotation: {res.x[0]}")
+        self.rotation = res.x[0]
 
         res = m1 @ m2 @ m3
         return res

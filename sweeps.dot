@@ -88,6 +88,7 @@ digraph Sweeps {
     "Sweep97" [label=<Sweep97 - BB <BR/> 96, but start with uniform friction randomization>];
     "Sweep98" [label=<Sweep98 - BB <BR/> 97, but friction between .1 and .5. less position variance>];
     "Sweep99" [label=<Sweep99 - BB <BR/> 98, but with Workspace Projection>];
+    "Sweep100" [label=<Sweep100 - BB <BR/> 99, but also project MPWrapper>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -181,5 +182,6 @@ digraph Sweeps {
     "Sweep95" -> "Sweep97"
     "Sweep97" -> "Sweep98"
     "Sweep98" -> "Sweep99"
+    "Sweep99" -> "Sweep100"
 }
 
