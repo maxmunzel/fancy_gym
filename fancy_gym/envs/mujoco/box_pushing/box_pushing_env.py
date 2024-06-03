@@ -295,7 +295,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # print(f"Max Speed: {max_speed:.2f}")
             # print(f"Idle time: {idle_time:.2f}")
             # print(f"Target_pos: ", target_pos)
-            print(json.dumps({"max_speed": max_speed, "rotation": self.rotation, "clip": self.clipping_sum}))
+            print(
+                json.dumps(
+                    {
+                        "max_speed": max_speed,
+                        "rotation": self.rotation,
+                        "clip": self.clipping_sum,
+                    }
+                )
+            )
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -530,9 +538,16 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         def proj_quat(quat):
             quat = quat.flatten().copy()
             assert quat.shape == (4,)
-            q = Rotation.from_quat(quat[[3, 0, 1, 2]])
+            q = Rotation.from_quat(quat[[1, 2, 3, 0]])
             r = Rotation.from_matrix(self.sim2obs[:3, :3])
-            return (r * q).as_quat()[[3, 0, 1, 2]]
+            return (r * q).as_quat()[
+                [
+                    3,
+                    0,
+                    1,
+                    2,
+                ]
+            ]
 
         obs = np.concatenate(
             [
