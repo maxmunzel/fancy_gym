@@ -89,7 +89,7 @@ digraph Sweeps {
     "Sweep98" [label=<Sweep98 - BB <BR/> 97, but friction between .1 and .5. less position variance>];
     "Sweep99" [label=<Sweep99 - BB <BR/> 98, but with Workspace Projection>];
     "Sweep100" [label=<Sweep100 - BB <BR/> 99, but also project MPWrapper>];
-    "Sweep101" [label=<Sweep100 - BB <BR/> 95, but 7DOF Hypers>];
+    "Sweep101" [label=<Sweep101 - BB <BR/> 95, but 7DOF Hypers>];
 
     // Edges
     "Sweep8" -> "Sweep9"
