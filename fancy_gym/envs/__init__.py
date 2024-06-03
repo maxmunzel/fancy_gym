@@ -265,6 +265,47 @@ for alpha in range(5, 30):
     for w_scale in [1, 3, 10]:
         for g_scale in [1, 3, 10]:
             register(
+            register(
+                id=f"Sweep102-alpha{alpha}-tau5-ws{w_scale}-gs{g_scale}-replan",
+                entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
+                kwargs={
+                    "name": "BoxPushingTemporalSparse-v0",
+                    "wrappers": [mujoco.box_pushing.MPWrapper],
+                    "trajectory_generator_kwargs": {
+                        "trajectory_generator_type": "prodmp",
+                        "duration": 8.0,
+                        "action_dim": 2,
+                        "weight_scale": w_scale / 10,
+                        "auto_scale_basis": True,
+                        "goal_scale": g_scale / 10,
+                        "relative_goal": False,
+                        "disable_goal": False,
+                    },
+                    "phase_generator_kwargs": {
+                        "phase_generator_type": "exp",
+                        "tau": 5,
+                    },
+                    "controller_kwargs": {
+                        "controller_type": "position",
+                    },
+                    "basis_generator_kwargs": {
+                        "basis_generator_type": "prodmp",
+                        "alpha": alpha,
+                        "num_basis": 4,
+                        # 'num_basis_zero_start': 1,
+                    },
+                    "black_box_kwargs": {
+                        "replanning_schedule": lambda pos, vel, obs, action, t: t % 50
+                        == 0,
+                        "condition_on_desired": True,
+                    },
+                    "random_init": True,
+                },
+            )
+for alpha in range(5, 30):
+    for w_scale in [1, 3, 10]:
+        for g_scale in [1, 3, 10]:
+            register(
                 id=f"Sweep78-alpha{alpha}-ws{w_scale}-gs{g_scale}",
                 entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
                 kwargs={
