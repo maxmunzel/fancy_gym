@@ -265,7 +265,6 @@ for alpha in range(5, 30):
     for w_scale in [1, 3, 10]:
         for g_scale in [1, 3, 10]:
             register(
-            register(
                 id=f"Sweep102-alpha{alpha}-tau5-ws{w_scale}-gs{g_scale}-replan",
                 entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
                 kwargs={
