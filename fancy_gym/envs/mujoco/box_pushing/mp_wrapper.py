@@ -20,25 +20,27 @@ class MPWrapper(RawInterfaceWrapper):
     @property
     def current_pos(self) -> Union[float, int, np.ndarray, Tuple]:
         return (
-            np.hstack(
+            self.env.sim2obs
+            @ np.hstack(
                 [
                     self.data.joint("finger_x_joint").qpos,
                     self.data.joint("finger_y_joint").qpos,
-                    [0, 1],
+                    [0],
+                    [1],
                 ]
             )
-            @ self.env.sim2obs
-        )[:2]
+        ).flatten()[:2]
 
     @property
     def current_vel(self) -> Union[float, int, np.ndarray, Tuple]:
         return (
-            np.hstack(
+            self.env.sim2obs
+            @ np.hstack(
                 [
                     self.data.joint("finger_x_joint").qvel,
                     self.data.joint("finger_y_joint").qvel,
-                    [0, 0],
+                    [0],
+                    [0],
                 ]
             )
-            @ self.env.sim2obs
-        )[:2]
+        ).flatten()[:2]
