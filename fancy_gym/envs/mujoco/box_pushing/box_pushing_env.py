@@ -104,10 +104,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
         )
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1, 50],
-            low=[-0.39, 0.30, 0, 0.20, 50, 0.1],
+            alphas=[1, 1, 1, 1, 1, 1],
+            low=[-0.39, 0.30, 0, 0.20, 50, 0.3],
             high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 0.3],
-            param_bound=[1, 1, 1, 1, 1, 50],
+            param_bound=[1, 1, 1, 1, 1, 1],
             names=[
                 "start_y",
                 "start_x",
@@ -275,7 +275,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep70.
-            speed_limit = 0.8  # m/s
+            speed_limit = 0.3  # m/s
             max_speed = max(self.ee_speeds)
             reward -= max_speed
             if max_speed > speed_limit:
