@@ -489,6 +489,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         obs = np.nan_to_num(obs, nan=0)
         obs = np.clip(obs, -1, 1)
+
+        if redis_connection is not None:
+            redis_connection.xadd(
+                "observation",
+                {
+                    "observation": json.dumps(obs.tolist()),
+                },
+            )
         return obs
 
     def _joint_limit_violate_penalty(
