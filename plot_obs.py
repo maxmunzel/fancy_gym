@@ -82,7 +82,7 @@ def animate(_):
 
     ax.clear()
     ax.set_xlim(-0.4, 0.4)
-    ax.set_ylim(0.6, 0.2)
+    ax.set_ylim(0.8, 0.2)
     ax.set_aspect("equal")
     ax.scatter([obs[1]], [obs[0]], label="Finger")
     draw_pos(

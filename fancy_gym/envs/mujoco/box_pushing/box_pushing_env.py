@@ -458,21 +458,29 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def _get_obs(self):
         finger_pos = self.data.body("finger").xpos[:2].copy()
-        box_pos = self.data.body("box_0").xpos[:2].copy()
+        if redis_connection is None:
+            box_pos = self.data.body("box_0").xpos[:2].copy().flatten()
+            box_quat = self.data.body("box_0").xquat.copy().flatten()
+        else:
+            box_pos = self.data.body("mocap_box").xpos[:2].copy().flatten()
+            box_quat = self.data.body("mocap_box").xquat.copy().flatten()
 
         # Simulate measurement error. We assume perfect finger positions and box rotations.
         # Box positions are assumed to have additive noise.
 
-        if self._steps == 0:
-            # At the first step, the finger is put where we think the box is.
-            # Therefore the agent always sees box_measured == finger.
-            # We don't need to simulate measurement noise here,
-            # as the reset_model() method will place the finger slightly off-center for us.
-            box_pos_measured = finger_pos.copy()
+        if redis_connection is not None:
+            box_pos_measured = box_pos
         else:
-            # In all other steps, take the simulated box and add noise
-            box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
-            box_pos_measured = box_pos + box_err
+            if self._steps == 0:
+                # At the first step, the finger is put where we think the box is.
+                # Therefore the agent always sees box_measured == finger.
+                # We don't need to simulate measurement noise here,
+                # as the reset_model() method will place the finger slightly off-center for us.
+                box_pos_measured = finger_pos.copy()
+            else:
+                # In all other steps, take the simulated box and add noise
+                box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
+                box_pos_measured = box_pos + box_err
 
         obs = np.concatenate(
             [
@@ -481,7 +489,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body("replan_target_pos")
                 .xpos[:2]
                 .copy(),  # position of target
-                self.data.body("box_0").xquat.copy(),  # orientation of box
+                box_quat,
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
