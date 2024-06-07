@@ -275,7 +275,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep70.
-            speed_limit = 0.3  # m/s
+            speed_limit = 0.6  # m/s -- was .8
             max_speed = max(self.ee_speeds)
             reward -= max_speed
             if max_speed > speed_limit:
