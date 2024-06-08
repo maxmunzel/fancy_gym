@@ -92,6 +92,7 @@ digraph Sweeps {
     "Sweep101" [label=<Sweep101 - BB <BR/> 95, but 7DOF Hypers>];
     "Sweep104" [label=<Sweep104 - BB <BR/> 95, but no friction rand, .3 speed limit>];
     "Sweep105" [label=<Sweep105 - BB <BR/> 104, but .6 speed limit>];
+    "Sweep106" [label=<Sweep106 - BB <BR/> 105, but 4s>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -189,5 +190,6 @@ digraph Sweeps {
     "Sweep95" -> "Sweep101"
     "Sweep95" -> "Sweep104"
     "Sweep104" -> "Sweep105"
+    "Sweep105" -> "Sweep106"
 }
 
