@@ -694,8 +694,10 @@ class BoxPushingDense(BoxPushingEnvBase):
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
+        if self.ee_speeds and self.ee_speeds[-1] > 0.6:
+            reward -= 50
 
-        return (reward / 100) * MAX_EPISODE_STEPS_BOX_PUSHING
+        return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
 
 class BoxPushingTemporalSparse(BoxPushingEnvBase):
