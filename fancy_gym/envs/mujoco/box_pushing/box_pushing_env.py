@@ -101,7 +101,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=np.array([-np.inf, -np.inf]), high=np.array([np.inf, np.inf])
         )
         self.observation_space = spaces.Box(
-            low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
+            low=np.array([-1.2] * 14 + [-10, -10]),
+            high=np.array([1.2] * 14 + [10, 10]),
+            dtype=np.float64,
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 1],
@@ -200,6 +202,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
     def step(self, action):
         action_clipped = np.clip(action, a_min=[0.35, -0.37], a_max=[0.65, 0.37])
+
+        finger = self.data.body("finger").xpos[:2]
+
+        dx = action_clipped - finger
+        n_dx = np.linalg.norm(dx)
+        dx /= n_dx
+
+        action_clipped = finger + dx * min(0.1, n_dx)
+
         clipping_dist = np.linalg.norm(action - action_clipped)
         action = action_clipped
         if redis_connection is not None:
@@ -268,7 +279,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             reward = -50
 
-        reward -= clipping_dist
+        reward -= clipping_dist * 5
         too_fast = 0.0
         idle_time = np.mean(np.array(self.ee_speeds) <= 0.05)
         if episode_end:
@@ -493,6 +504,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
+                self.data.body("finger").cvel[:2].copy(),
             ]
         )
         obs = np.nan_to_num(obs, nan=0)
@@ -529,6 +541,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return penalty
 
     def _get_box_vel(self):
+
         return self.data.body("box_0").cvel.copy()
 
     def get_body_jacp(self, name):
@@ -694,8 +707,16 @@ class BoxPushingDense(BoxPushingEnvBase):
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
-        if self.ee_speeds and self.ee_speeds[-1] > 0.6:
-            reward -= 50
+        if self.ee_speeds:
+            # Max EE Speed Panality -- ensure the trajectory is executable
+            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
+            # during the rollouts of Sweep70.
+            speed_limit = 0.6  # m/s -- was .8
+            speed = self.ee_speeds[-1]
+            reward -= speed
+            if speed > speed_limit:
+                reward -= speed * 5
+                reward -= 20
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
