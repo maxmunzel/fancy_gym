@@ -25,7 +25,7 @@ from typing import Tuple, Optional, Union
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 200
+MAX_EPISODE_STEPS_BOX_PUSHING = 250
 
 BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
