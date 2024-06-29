@@ -97,6 +97,7 @@ digraph Sweeps {
     "Sweep108" [label=<Sweep108 - SAC <BR/> 106, but SAC>];
     "Sweep109" [label=<Sweep109 - BB <BR/> 106, but Random Search>];
     "Sweep110" [label=<Sweep110 - BB <BR/> 106, but 5s>];
+    "Sweep111" [label=<Sweep110 - BB <BR/> 106, but 6s>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -199,5 +200,6 @@ digraph Sweeps {
     "Sweep106" -> "Sweep108"
     "Sweep106" -> "Sweep109"
     "Sweep106" -> "Sweep110"
+    "Sweep106" -> "Sweep111"
 }
 
