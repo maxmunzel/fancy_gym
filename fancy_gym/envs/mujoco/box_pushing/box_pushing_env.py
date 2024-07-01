@@ -101,7 +101,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=np.array([-np.inf, -np.inf]), high=np.array([np.inf, np.inf])
         )
         self.observation_space = spaces.Box(
-            low=-1.2 * np.ones(14), high=1.2 * np.ones(14), dtype=np.float64
+            low=np.array([-1.2] * 14 + [-10, -10]),
+            high=np.array([1.2] * 14 + [10, 10]),
+            dtype=np.float64,
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 1],
@@ -493,6 +495,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
+                self.data.body("finger").cvel[:2].copy(),
             ]
         )
         obs = np.nan_to_num(obs, nan=0)
@@ -694,8 +697,18 @@ class BoxPushingDense(BoxPushingEnvBase):
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
+        if self.ee_speeds:
+            # Max EE Speed Panality -- ensure the trajectory is executable
+            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
+            # during the rollouts of Sweep70.
+            speed_limit = 0.6  # m/s -- was .8
+            speed = self.ee_speeds[-1]
+            reward -= speed
+            if speed > speed_limit:
+                reward -= speed * 5
+                reward -= 20
 
-        return (reward / 100) * MAX_EPISODE_STEPS_BOX_PUSHING
+        return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
 
 class BoxPushingTemporalSparse(BoxPushingEnvBase):
