@@ -1,11 +1,11 @@
 <mujoco model="push_box">
     <worldbody>
         <body name="box_0" pos="0 0 0" quat="1 0 0 0">
-            <geom conaffinity="8" pos="0 0 0.01" size="0.05 0.05 0.01" rgba="1 0 0 1.0" type="box" mass="0.0308" friction="0.4296 0.001 0.0001" priority="1"/>
-            <geom conaffinity="8" pos="0.05 0 0.0485" size="0.005 0.05 0.045" rgba="0 0 1 1.0" type="box" mass="0.125"/>
-            <geom conaffinity="8" pos="0 0.05 0.0485" size="0.05 0.005 0.045" rgba="1 0 0 1.0" type="box" mass="0.125"/>
-            <geom conaffinity="8" pos="-0.05 0 0.0485" size="0.005 0.05 0.045" rgba="1 0 0 1.0" type="box" mass="0.125"/>
-            <geom conaffinity="8" pos="0 -0.05 0.0485" size="0.05 0.005 0.045" rgba="1 0 0 1.0" type="box" mass="0.125"/>
+        <geom conaffinity="8" pos="0 0 0.0016" size="0.064 0.064 0.0018" rgba="1 0 0 1.0" type="box" mass="0.0308" friction="0.4296 0.001 0.0001" priority="1"/> <!-- bot -->
+            <geom conaffinity="8" pos="0.056 0 0.0624" size="0.008 0.048 0.0624" rgba="0 0 1 1.0" type="box" mass="0.125"/>
+            <geom conaffinity="8" pos="0 0.056 0.0624" size="0.064 0.008 0.0624" rgba="1 0 0 1.0" type="box" mass="0.125"/>
+            <geom conaffinity="8" pos="-0.056 0 0.0624" size="0.008 0.048 0.0624" rgba="1 0 0 1.0" type="box" mass="0.125"/>
+            <geom conaffinity="8" pos="0 -0.056 0.0624" size="0.064 0.008 0.0624" rgba="1 0 0 1.0" type="box" mass="0.125"/>
             <joint name="box_x_joint" type="slide" pos="0 0 0" axis="1 0 0" />
             <joint name="box_y_joint" type="slide" pos="0 0 0" axis="0 1 0" />
             <joint name="box_z_joint" type="slide" pos="0 0 0" axis="0 0 1" />
