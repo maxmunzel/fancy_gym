@@ -279,14 +279,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # during the rollouts of Sweep70.
             speed_limit = 0.6  # m/s -- was .8
             max_speed = max(self.ee_speeds)
-            reward -= max_speed
-            if max_speed > speed_limit:
-                too_fast = 1.0
-                reward -= max_speed * 5
-                reward -= 20
-            print(f"Max Speed: {max_speed:.2f}")
-            print(f"Idle time: {idle_time:.2f}")
-            print(f"Target_pos: ", target_pos)
+            #reward -= max_speed
+            #if max_speed > speed_limit:
+            #    too_fast = 1.0
+            #    reward -= max_speed * 5
+            #    reward -= 20
+            #print(f"Max Speed: {max_speed:.2f}")
+            #print(f"Idle time: {idle_time:.2f}")
+            #print(f"Target_pos: ", target_pos)
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -482,7 +482,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             else:
                 # In all other steps, take the simulated box and add noise
                 box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
-                box_pos_measured = box_pos + box_err
+                box_pos_measured = box_pos #  + box_err
 
         obs = np.concatenate(
             [
@@ -703,10 +703,10 @@ class BoxPushingDense(BoxPushingEnvBase):
             # during the rollouts of Sweep70.
             speed_limit = 0.6  # m/s -- was .8
             speed = self.ee_speeds[-1]
-            reward -= speed
-            if speed > speed_limit:
-                reward -= speed * 5
-                reward -= 20
+            reward -= .005 * speed
+            # if speed > speed_limit:
+            #     reward -= speed * 5
+            #     reward -= 2
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
