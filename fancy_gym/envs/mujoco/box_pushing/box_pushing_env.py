@@ -398,8 +398,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
             self.data.joint("box_rot_joint").qpos = self.sample_dict["start_theta"]
-            self.data.joint("box_x_joint").qpos = box_init_pos[0] + box_err[0]
-            self.data.joint("box_y_joint").qpos = box_init_pos[1] + box_err[1]
+            self.data.joint("box_x_joint").qpos = box_init_pos[0]  # + box_err[0]
+            self.data.joint("box_y_joint").qpos = box_init_pos[1]  # + box_err[1]
             self.data.joint("finger_x_joint").qpos = box_init_pos[0]
             self.data.joint("finger_y_joint").qpos = box_init_pos[1]
 
@@ -482,7 +482,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             else:
                 # In all other steps, take the simulated box and add noise
                 box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
-                box_pos_measured = box_pos + box_err
+                box_pos_measured = box_pos  # + box_err
 
         obs = np.concatenate(
             [
@@ -495,7 +495,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
-                self.data.body("finger").cvel[:2].copy(),
             ]
         )
         obs = np.nan_to_num(obs, nan=0)
@@ -703,10 +702,9 @@ class BoxPushingDense(BoxPushingEnvBase):
             # during the rollouts of Sweep70.
             speed_limit = 0.6  # m/s -- was .8
             speed = self.ee_speeds[-1]
-            reward -= speed
+            reward -= 0.05 * speed
             if speed > speed_limit:
-                reward -= speed * 5
-                reward -= 20
+                reward -= speed
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
