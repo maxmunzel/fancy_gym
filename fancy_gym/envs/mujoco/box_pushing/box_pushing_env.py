@@ -107,8 +107,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         )
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 1],
-            low=[-0.39, 0.30, 0, 0.20, 50, 0.3],
-            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 0.3],
+            low=[-0.39, 0.30, 0, 0.20, 50, 0.4296],
+            high=[0.39, 0.67, 2 * np.pi, 0.20, 100, 0.4296],
             param_bound=[1, 1, 1, 1, 1, 1],
             names=[
                 "start_y",
@@ -279,14 +279,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             # during the rollouts of Sweep70.
             speed_limit = 0.6  # m/s -- was .8
             max_speed = max(self.ee_speeds)
-            reward -= max_speed
-            if max_speed > speed_limit:
-                too_fast = 1.0
-                reward -= max_speed * 5
-                reward -= 20
+            # reward -= max_speed
+            # if max_speed > speed_limit:
+            #    too_fast = 1.0
+            #    reward -= max_speed * 5
+            #    reward -= 20
             print(f"Max Speed: {max_speed:.2f}")
-            print(f"Idle time: {idle_time:.2f}")
-            print(f"Target_pos: ", target_pos)
+            # print(f"Idle time: {idle_time:.2f}")
+            # print(f"Target_pos: ", target_pos)
 
             ## Also make sure we stop at the end of the episode
             # reward -= 10 * speed
@@ -679,6 +679,17 @@ class BoxPushingDense(BoxPushingEnvBase):
             frame_skip=frame_skip, random_init=random_init
         )
 
+    def step(self, action):
+        # Present the step based policy with a velocity action space and convert
+        # it to position commands using a simple P controller.
+        v_desired = np.array(action)
+        v_is = self.data.body("finger").cvel.copy()[:2]
+
+        k_p = 0.1
+        pos_is = self.data.body("finger").xpos.copy()[:2]
+        pos_desired = pos_is + k_p * (v_desired - v_is)
+        return BoxPushingEnvBase.step(self, pos_desired)
+
     def _get_reward(
         self,
         episode_end,
@@ -702,7 +713,7 @@ class BoxPushingDense(BoxPushingEnvBase):
             # during the rollouts of Sweep70.
             speed_limit = 0.6  # m/s -- was .8
             speed = self.ee_speeds[-1]
-            reward -= 0.05 * speed
+            reward -= 0.005 * speed
             if speed > speed_limit:
                 reward -= speed
 

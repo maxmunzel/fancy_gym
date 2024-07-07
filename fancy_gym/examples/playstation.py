@@ -16,8 +16,8 @@ joystick = pygame.joystick.Joystick(0)  # Assume the PS4 controller is joystick 
 joystick.init()
 
 # Setup OpenAI Gym environment
-env = BoxPushingTemporalSparse(random_init=True, frame_skip=10)
-# env = fancy_gym.make("BoxPushingDense-v0", seed=42)
+# env = BoxPushingTemporalSparse(random_init=True, frame_skip=10)
+env = fancy_gym.make("BoxPushingDense-v0", seed=42)
 obs = env.reset(seed=42)
 
 throttle = Throttle(target_hz=50, busy_wait=False)
