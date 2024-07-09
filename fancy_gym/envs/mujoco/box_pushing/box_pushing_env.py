@@ -21,7 +21,6 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     q_dot_max,
 )
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
-from typing import Tuple, Optional, Union
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 
@@ -53,6 +52,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.doraemon = None
         utils.EzPickle.__init__(**locals())
         self._steps = 0
+
+        # Max EE Speed -- ensures the trajectory is executable
+        # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
+        # during the rollouts of Sweep70. The actual max is around .8 m/s, but .6 is a safe choice. Good policies
+        # max out at around .4 m/s so this does not affect performance.
+        self.speed_limit = 0.6  # m/s
         self.init_qpos_box_pushing = np.array(
             [
                 0.0,
@@ -208,16 +213,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             if self.throttle is None:
                 self.throttle = Throttle(target_hz=1 / self.dt, busy_wait=False)
             self.throttle.tick()
-        # time.sleep(1 / 30)
         action = 1 * np.array(action).flatten()
-
-        desired_tcp_pos = self.data.body("finger").xpos.copy()
-        desired_tcp_pos[2] += 0.055
-
-        q = self.data.qpos.copy()
-        v = self.data.qvel.copy()
-        self.data.qpos = q
-        self.data.qvel = v
 
         unstable_simulation = False
 
@@ -271,25 +267,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             reward = -50
 
         reward -= clipping_dist
-        too_fast = 0.0
-        idle_time = np.mean(np.array(self.ee_speeds) <= 0.05)
-        if episode_end:
-            # Max EE Speed Panality -- ensure the trajectory is executable
-            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
-            # during the rollouts of Sweep70.
-            speed_limit = 0.6  # m/s -- was .8
-            max_speed = max(self.ee_speeds)
-            # reward -= max_speed
-            # if max_speed > speed_limit:
-            #    too_fast = 1.0
-            #    reward -= max_speed * 5
-            #    reward -= 20
-            print(f"Max Speed: {max_speed:.2f}")
-            # print(f"Idle time: {idle_time:.2f}")
-            # print(f"Target_pos: ", target_pos)
+        too_fast = float(self.ee_speeds and (self.ee_speeds[-1] >= self.speed_limit))
 
-            ## Also make sure we stop at the end of the episode
-            # reward -= 10 * speed
+        idle_time = np.mean(np.array(self.ee_speeds) <= 0.05)
 
         # calculate power cost
         self._episode_energy += speed**2
@@ -396,7 +376,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             print(f"Reset done, finger @ {x:.2f} {y:.2f}")
 
         else:
-            box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
+            # box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
             self.data.joint("box_rot_joint").qpos = self.sample_dict["start_theta"]
             self.data.joint("box_x_joint").qpos = box_init_pos[0]  # + box_err[0]
             self.data.joint("box_y_joint").qpos = box_init_pos[1]  # + box_err[1]
@@ -481,7 +461,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 box_pos_measured = finger_pos.copy()
             else:
                 # In all other steps, take the simulated box and add noise
-                box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
+                # box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
                 box_pos_measured = box_pos  # + box_err
 
         obs = np.concatenate(
@@ -711,10 +691,9 @@ class BoxPushingDense(BoxPushingEnvBase):
             # Max EE Speed Panality -- ensure the trajectory is executable
             # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
             # during the rollouts of Sweep70.
-            speed_limit = 0.6  # m/s -- was .8
             speed = self.ee_speeds[-1]
             reward -= 0.005 * speed
-            if speed > speed_limit:
+            if speed > self.speed_limit:
                 reward -= speed
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
@@ -751,6 +730,17 @@ class BoxPushingTemporalSparse(BoxPushingEnvBase):
             box_goal_rot_dist_reward += (box_goal_rot_dist_reward / 20) ** 2
 
             reward += box_goal_pos_dist_reward + box_goal_rot_dist_reward
+
+            max_speed = max(self.ee_speeds)
+            reward -= max_speed
+
+            if max_speed > self.speed_limit:
+                reward -= max_speed * 5
+                reward -= 20
+            print(f"Max Speed: {max_speed:.2f}")
+
+            # Also make sure we stop at the end of the episode
+            reward -= 10 * self.ee_speeds[-1]
         return reward
 
 
