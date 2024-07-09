@@ -674,7 +674,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
 
 class BoxPushingDense(BoxPushingEnvBase):
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True):
         super(BoxPushingDense, self).__init__(
             frame_skip=frame_skip, random_init=random_init
         )
@@ -685,7 +685,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.1
+        k_p = 0.5
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
         return BoxPushingEnvBase.step(self, pos_desired)
@@ -721,7 +721,7 @@ class BoxPushingDense(BoxPushingEnvBase):
 
 
 class BoxPushingTemporalSparse(BoxPushingEnvBase):
-    def __init__(self, frame_skip: int = 10, random_init: bool = False):
+    def __init__(self, frame_skip: int = 10, random_init: bool = True):
         super(BoxPushingTemporalSparse, self).__init__(
             frame_skip=frame_skip, random_init=random_init
         )
