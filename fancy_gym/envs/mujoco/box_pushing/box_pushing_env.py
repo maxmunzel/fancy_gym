@@ -23,6 +23,7 @@ from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import desired_rod_quat
 from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
+import gc
 
 MAX_EPISODE_STEPS_BOX_PUSHING = 250
 
@@ -188,6 +189,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 # get rid of box
                 self.data.body("box_0").xpos[2] = -0.5
                 return box_pos, box_quat
+            res = redis_connection.xrevrange("ack", "+", "-", count=1)
+            if res:
+                _, payload = res[0]  # type: ignore
+                x = float(payload["x"])
+                y = float(payload["y"])
+                self.data.joint("finger_x_joint").qpos = x
+                self.data.joint("finger_y_joint").qpos = y
 
     def push_to_redis(self, action):
         assert redis_connection is not None
@@ -310,7 +318,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "idle_time": idle_time,
                 "clipping_dist": clipping_dist,
             }
-            infos.update(self.doraemon.param_dict())
+            if redis_connection is None and episode_end:
+                infos.update(self.doraemon.param_dict())
 
         self.last_episode_successful = is_real_success
 
@@ -338,7 +347,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.ee_speeds = []
         self.throttle = None  # clear throttle so target time does not persist resets
         self.randomize()
-        if self.doraemon is not None:
+        if self.doraemon is not None and redis_connection is None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
             try:
                 self.doraemon.update_dist()
@@ -413,6 +422,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         mujoco.mj_forward(self.model, self.data)
         self._steps = 0
         self._episode_energy = 0.0
+
+        if redis_connection is not None:
+            gc.collect()
 
         return self._get_obs()
 
