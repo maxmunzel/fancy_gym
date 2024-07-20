@@ -51,6 +51,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def __init__(self, frame_skip: int = 10, random_init: bool = True):
         self.throttle = None
         self.doraemon = None
+        self.sample_dict = dict()
         utils.EzPickle.__init__(**locals())
         self._steps = 0
 
@@ -112,12 +113,31 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dtype=np.float64,
         )
         m = 0.064  # half the width of the box, as a margin between the workspace and the initial position
+        mocap_max_err = 0.05
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1, 1],
+            alphas=[1, 1, 1, 1, 1, 20, 10, 10],
             # kp_opt = 168
-            low=[-0.39 + m, 0.30 + m, 0, 0.20, 100, 0.4296],
-            high=[0.39 - m, 0.67 - m, 2 * np.pi, 0.20, 236, 0.4296],
-            param_bound=[1, 1, 1, 1, 1, 1],
+            low=[
+                -0.39 + m,
+                0.30 + m,
+                0,
+                0.20,
+                100,
+                0.3296,
+                -mocap_max_err,
+                -mocap_max_err,
+            ],
+            high=[
+                0.39 - m,
+                0.67 - m,
+                2 * np.pi,
+                0.20,
+                236,
+                0.5296,
+                mocap_max_err,
+                mocap_max_err,
+            ],
+            param_bound=[1, 1, 1, 1, 1, 20, 10, 10],
             names=[
                 "start_y",
                 "start_x",
@@ -125,6 +145,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 "box_mass_factor",
                 "kp",
                 "friction",
+                "mocap_x_err",
+                "mocap_y_err",
             ],
             seed=42,
         )
@@ -467,7 +489,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         if redis_connection is not None:
             box_pos_measured = box_pos
         else:
-            if self._steps == 0:
+            if self._steps == 0 or not self.sample_dict:
                 # At the first step, the finger is put where we think the box is.
                 # Therefore the agent always sees box_measured == finger.
                 # We don't need to simulate measurement noise here,
@@ -475,8 +497,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 box_pos_measured = finger_pos.copy()
             else:
                 # In all other steps, take the simulated box and add noise
-                # box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
-                box_pos_measured = box_pos  # + box_err
+                box_pos_measured = box_pos + np.array(
+                    [self.sample_dict["mocap_x_err"], self.sample_dict["mocap_y_err"]]
+                )
 
         obs = np.concatenate(
             [
