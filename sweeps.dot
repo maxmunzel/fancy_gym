@@ -102,6 +102,8 @@ digraph Sweeps {
     "Sweep113" [label=<Sweep113 - TRPL <BR/> 112, but PPO>];
     "Sweep114" [label=<Sweep114 - BB <BR/> 80 but 5s, proper mass dist, proper box dims>];
     "Sweep115" [label=<Sweep115 - PPO <BR/> 114, but Velocity Controlled>];
+    "Sweep116" [label=<Sweep116 - BB/RE <BR/> 114, but 5s new PD Params>];
+    "Sweep117" [label=<Sweep117 - BB/RE <BR/> 116, but narrower init position and better step perf>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -210,5 +212,7 @@ digraph Sweeps {
     "Sweep112" -> "Sweep113"
     "Sweep113" -> "Sweep114"
     "Sweep114" -> "Sweep115"
+    "Sweep114" -> "Sweep116"
+    "Sweep116" -> "Sweep117"
 }
 
