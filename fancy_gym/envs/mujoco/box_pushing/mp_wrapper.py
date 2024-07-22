@@ -14,6 +14,7 @@ class MPWrapper(RawInterfaceWrapper):
             [
                 [True] * 6,  # finger, box, target positions
                 [True] * 8,  # box, target orientation
+                [True] * 2,  # sin/cos of box
             ]
         )
 
