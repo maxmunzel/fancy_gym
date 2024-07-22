@@ -8,6 +8,7 @@ import numpy as np
 from pathlib import Path
 from gym import utils, spaces
 from gym.envs.mujoco import MujocoEnv
+from scipy.spatial.transform import Rotation
 from fancy_gym.envs.mujoco.box_pushing.throttle import Throttle
 from fancy_gym.envs.mujoco.box_pushing.box_pushing_utils import (
     rot_to_quat,
@@ -107,8 +108,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=np.array([-np.inf, -np.inf]), high=np.array([np.inf, np.inf])
         )
         self.observation_space = spaces.Box(
-            low=np.array([-1.2] * 14),
-            high=np.array([1.2] * 14),
+            low=np.array([-1.2] * 16),
+            high=np.array([1.2] * 16),
             dtype=np.float64,
         )
         m = 0.064  # half the width of the box, as a margin between the workspace and the initial position
@@ -461,6 +462,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             box_pos = self.data.body("mocap_box").xpos[:2].copy().flatten()
             box_quat = self.data.body("mocap_box").xquat.copy().flatten()
 
+        box_mujoco_quat = np.array(box_quat).flatten()
+        assert box_mujoco_quat.shape == (4,)
+        quat = box_mujoco_quat[[1, 2, 3, 0]]
+        box_theta = np.linalg.norm(Rotation.from_quat(quat).as_rotvec())
+
         # Simulate measurement error. We assume perfect finger positions and box rotations.
         # Box positions are assumed to have additive noise.
 
@@ -489,6 +495,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 self.data.body(
                     "replan_target_pos"
                 ).xquat.copy(),  # orientation of target
+                [np.sin(box_theta), np.cos(box_theta)],
             ]
         )
         obs = np.nan_to_num(obs, nan=0)

@@ -105,6 +105,7 @@ digraph Sweeps {
     "Sweep116" [label=<Sweep116 - BB/RE <BR/> 114, but 5s new PD Params>];
     "Sweep117" [label=<Sweep117 - BB/RE <BR/> 116, but narrower init position and better step perf>];
     "Sweep118" [label=<Sweep118 - BB/RE <BR/> 117, but with friction and mocap DR>];
+    "Sweep119" [label=<Sweep119 - BB/RE <BR/> 117, but with sin/cos obs>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -216,5 +217,6 @@ digraph Sweeps {
     "Sweep114" -> "Sweep116"
     "Sweep116" -> "Sweep117"
     "Sweep117" -> "Sweep118"
+    "Sweep117" -> "Sweep119"
 }
 
