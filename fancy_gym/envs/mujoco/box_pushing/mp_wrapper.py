@@ -12,8 +12,8 @@ class MPWrapper(RawInterfaceWrapper):
     def context_mask(self):
         return np.hstack(
             [
-                [True] * 6,  # finger, box, target positions
-                [True] * 8,  # box, target orientation
+                [True] * 4,  # finger, box, target positions
+                # [True] * 8,  # box, target orientation
                 [True] * 2,  # sin/cos of box
             ]
         )
