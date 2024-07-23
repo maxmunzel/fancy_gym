@@ -108,8 +108,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             low=np.array([-np.inf, -np.inf]), high=np.array([np.inf, np.inf])
         )
         self.observation_space = spaces.Box(
-            low=np.array([-1.2] * 16),
-            high=np.array([1.2] * 16),
+            low=np.array([-1] * 6),
+            high=np.array([1] * 6),
             dtype=np.float64,
         )
         m = 0.064  # half the width of the box, as a margin between the workspace and the initial position
@@ -453,6 +453,30 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     ):
         raise NotImplementedError
 
+    @staticmethod
+    def project_transform_onto_table(mujoco_quat: np.ndarray, check=True) -> np.ndarray:  
+        quat = mujoco_quat[[1,2,3,0]]
+        # Convert the input rotation to Euler angles with 'ZYX' convention
+        euler_angles = Rotation.from_quat(quat).as_euler("ZYX")
+
+        euler_angles[1] = 0
+        euler_angles[2] = 0
+
+        # Convert the modified Euler angles back to the result
+        quat = Rotation.from_euler("ZYX", euler_angles).as_quat()
+        res = quat[[3,0,1,2]]
+        if check:
+            assert np.allclose(res, BoxPushingEnvBase.project_transform_onto_table(res.copy(), check=False))
+        return res
+
+    @staticmethod
+    def quat_to_z_theta(mujoco_quat: np.ndarray) -> float:  
+        quat = mujoco_quat[[1,2,3,0]]
+        # Convert the input rotation to Euler angles with 'ZYX' convention
+        euler_angles = Rotation.from_quat(quat).as_euler("ZYX")
+        return float(euler_angles[0])
+
+
     def _get_obs(self):
         finger_pos = self.data.body("finger").xpos[:2].copy()
         if redis_connection is None:
@@ -461,11 +485,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         else:
             box_pos = self.data.body("mocap_box").xpos[:2].copy().flatten()
             box_quat = self.data.body("mocap_box").xquat.copy().flatten()
+        # box_quat = self.project_transform_onto_table(box_quat, check=False)
 
         box_mujoco_quat = np.array(box_quat).flatten()
         assert box_mujoco_quat.shape == (4,)
-        quat = box_mujoco_quat[[1, 2, 3, 0]]
-        box_theta = np.linalg.norm(Rotation.from_quat(quat).as_rotvec())
+        box_theta = self.quat_to_z_theta(mujoco_quat=box_mujoco_quat)
+        # quat = box_mujoco_quat[[1, 2, 3, 0]]
+        # box_theta = np.linalg.norm(Rotation.from_quat(quat).as_rotvec())
+        
 
         # Simulate measurement error. We assume perfect finger positions and box rotations.
         # Box positions are assumed to have additive noise.
@@ -488,13 +515,13 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             [
                 finger_pos,
                 box_pos_measured,
-                self.data.body("replan_target_pos")
-                .xpos[:2]
-                .copy(),  # position of target
-                box_quat,
-                self.data.body(
-                    "replan_target_pos"
-                ).xquat.copy(),  # orientation of target
+                #self.data.body("replan_target_pos")
+                #.xpos[:2]
+                #.copy(),  # position of target
+                # box_quat,
+                # self.data.body(
+                #     "replan_target_pos"
+                # ).xquat.copy(),  # orientation of target
                 [np.sin(box_theta), np.cos(box_theta)],
             ]
         )
