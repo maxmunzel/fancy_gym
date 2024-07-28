@@ -114,27 +114,27 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dtype=np.float64,
         )
         mocap_max_err = 0.10
-        rot_max_err = 0.7
+        rot_max_err = 0.5
         kp_opt = 168
         dist = MultivariateBetaDistribution(
-            alphas=[20, 20, 20, 20, 20, 20],
+            alphas=[1, 100, 100, 100, 100, 100],
             low=[
-                0.10,
-                1,
+                0.20,
+                kp_opt * 0.5,
                 0.2296,
                 -mocap_max_err,
                 -mocap_max_err,
                 -rot_max_err,
             ],
             high=[
-                0.30,
-                kp_opt * 2,
+                0.20,
+                kp_opt * 1.5,
                 0.6296,
                 mocap_max_err,
                 mocap_max_err,
                 rot_max_err,
             ],
-            param_bound=[30, 30, 30, 30, 30, 30],
+            param_bound=[1, 100, 100, 100, 100, 100],
             names=[
                 "box_mass_factor",
                 "kp",
@@ -510,7 +510,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         assert box_mujoco_quat.shape == (4,)
         box_theta = self.quat_to_z_theta(mujoco_quat=box_mujoco_quat)
 
-        if redis_connection is None:
+        if redis_connection is None and self.sample_dict:
             box_theta += self.sample_dict["rot_noise"]
             box_theta = box_theta % (2 * np.pi)
         # quat = box_mujoco_quat[[1, 2, 3, 0]]
