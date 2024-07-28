@@ -114,14 +114,14 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             dtype=np.float64,
         )
         mocap_max_err = 0.10
-        rot_max_err = 0.5
+        rot_max_err = 0.3
         kp_opt = 168
         dist = MultivariateBetaDistribution(
             alphas=[1, 100, 100, 100, 100, 100],
             low=[
                 0.20,
                 kp_opt * 0.5,
-                0.2296,
+                0.3296,
                 -mocap_max_err,
                 -mocap_max_err,
                 -rot_max_err,
@@ -129,7 +129,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             high=[
                 0.20,
                 kp_opt * 1.5,
-                0.6296,
+                0.5296,
                 mocap_max_err,
                 mocap_max_err,
                 rot_max_err,
