@@ -510,9 +510,12 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         assert box_mujoco_quat.shape == (4,)
         box_theta = self.quat_to_z_theta(mujoco_quat=box_mujoco_quat)
 
-        if redis_connection is None and self.sample_dict:
+        if False and redis_connection is None and self.sample_dict:
             box_theta += self.sample_dict["rot_noise"]
-            box_theta = box_theta % (2 * np.pi)
+            if box_theta > np.pi:
+                box_theta -= 2 * np.pi
+            elif box_theta < -np.pi:
+                box_theta += 2 * np.pi
         # quat = box_mujoco_quat[[1, 2, 3, 0]]
         # box_theta = np.linalg.norm(Rotation.from_quat(quat).as_rotvec())
 
