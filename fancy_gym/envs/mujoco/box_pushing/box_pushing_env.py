@@ -714,7 +714,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.5
+        k_p = 0.7
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
         return BoxPushingEnvBase.step(self, pos_desired)
