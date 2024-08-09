@@ -759,16 +759,17 @@ class BoxPushingDense(BoxPushingEnvBase):
     ):
         box_goal_pos_dist_reward = -3.5 * np.linalg.norm(box_pos - target_pos)
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
+        box_goal_rot_dist_reward /= 8
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
-        if self.ee_speeds:
-            # Max EE Speed Panality -- ensure the trajectory is executable
-            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
-            # during the rollouts of Sweep70.
-            speed = self.ee_speeds[-1]
-            reward -= 0.005 * speed
-            if speed > self.speed_limit:
-                reward -= speed
+        # if self.ee_speeds:
+        #     # Max EE Speed Panality -- ensure the trajectory is executable
+        #     # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
+        #     # during the rollouts of Sweep70.
+        #     speed = self.ee_speeds[-1]
+        #     reward -= 0.005 * speed
+        #     if speed > self.speed_limit:
+        #         reward -= speed
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 
