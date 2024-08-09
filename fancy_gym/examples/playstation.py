@@ -36,6 +36,8 @@ try:
         y_axis = joystick.get_axis(1)  # Left stick vertical
 
         joy = np.array([y_axis, x_axis])
+        if env.ee_speeds:
+            print(env.ee_speeds[-1])
 
         finger_pos = env.data.body("finger").xpos.copy()[:2]
         action = finger_pos + 2 * joy

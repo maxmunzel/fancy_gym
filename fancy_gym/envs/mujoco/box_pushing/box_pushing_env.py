@@ -449,8 +449,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
     def sample_context(self):
         m = 0.05  # half a box width
         pos = np.zeros(2)
-        pos[0] = self.np_random.uniform(-0.39 + m, 0.39 - m)
-        pos[1] = self.np_random.uniform(0.30 + m, 0.67 - m)
+        pos[1] = self.np_random.uniform(-0.39 + m, 0.39 - m)
+        pos[0] = self.np_random.uniform(0.30 + m, 0.67 - m)
         theta = self.np_random.uniform(0, 2 * np.pi)
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
         return np.concatenate([pos, quat])
@@ -739,7 +739,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.5
+        k_p = 0.1
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
         return BoxPushingEnvBase.step(self, pos_desired)
