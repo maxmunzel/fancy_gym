@@ -764,7 +764,6 @@ class BoxPushingDense(BoxPushingEnvBase):
     ):
         box_goal_pos_dist_reward = -3.5 * np.linalg.norm(box_pos - target_pos)
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
-        box_goal_rot_dist_reward /= 8
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
         # if self.ee_speeds:
