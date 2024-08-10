@@ -734,15 +734,20 @@ class BoxPushingDense(BoxPushingEnvBase):
         )
 
     def step(self, action):
+        action_clipped = np.clip(action, a_min=-1, a_max=1)
+        clip_penalty = 0.1 * np.linalg.norm(action - action_clipped)
+        action = action_clipped
+
         # Present the step based policy with a velocity action space and convert
         # it to position commands using a simple P controller.
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.1
+        k_p = 0.04
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
-        return BoxPushingEnvBase.step(self, pos_desired)
+        obs, reward, episode_end, infos = BoxPushingEnvBase.step(self, pos_desired)
+        return obs, reward - clip_penalty, episode_end, infos
 
     def _get_reward(
         self,
