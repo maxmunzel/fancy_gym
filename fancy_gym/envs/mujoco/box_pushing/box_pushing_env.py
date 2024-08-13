@@ -26,7 +26,7 @@ from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 import gc
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 250
+MAX_EPISODE_STEPS_BOX_PUSHING = 600
 
 BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
@@ -113,7 +113,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             high=np.array([1] * 6),
             dtype=np.float64,
         )
-        m = 0.064  # half the width of the box, as a margin between the workspace and the initial position
+        m = 0.10
         mocap_max_err = 0.05
         dist = MultivariateBetaDistribution(
             alphas=[1, 1, 1, 1, 1, 20, 10, 10],
@@ -411,11 +411,18 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         else:
             # box_err = self.np_random.uniform(low=-0.03, high=0.03, size=2)
-            self.data.joint("box_rot_joint").qpos = self.sample_dict["start_theta"]
+            self.data.joint("box_rot_joint").qpos = self.np_random.uniform(0, 2 * np.pi)
             self.data.joint("box_x_joint").qpos = box_init_pos[0]  # + box_err[0]
             self.data.joint("box_y_joint").qpos = box_init_pos[1]  # + box_err[1]
-            self.data.joint("finger_x_joint").qpos = box_init_pos[0]
-            self.data.joint("finger_y_joint").qpos = box_init_pos[1]
+            while True:
+                # find finger pos outside of box
+                sample = self.sample_context()
+                x = sample[0]
+                y = sample[1]
+                if np.linalg.norm(box_init_pos[:2] - [x, y]) >= 0.15:
+                    break
+            self.data.joint("finger_x_joint").qpos = x
+            self.data.joint("finger_y_joint").qpos = y
 
         # set target position
         box_target_pos = self.sample_context()
@@ -453,10 +460,11 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return self._get_obs()
 
     def sample_context(self):
-        pos = self.np_random.uniform(low=BOX_POS_BOUND[0], high=BOX_POS_BOUND[1])
-        pos[0] = self.sample_dict["start_x"]
-        pos[1] = self.sample_dict["start_y"]
-        theta = self.sample_dict["start_theta"]
+        m = 0.1  # box width
+        pos = np.zeros(2)
+        pos[1] = self.np_random.uniform(-0.39 + m, 0.39 - m)
+        pos[0] = self.np_random.uniform(0.30 + m, 0.67 - m)
+        theta = self.np_random.uniform(0, 2 * np.pi)
         quat = rot_to_quat(theta, np.array([0, 0, 1]))
         return np.concatenate([pos, quat])
 
@@ -476,8 +484,8 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         raise NotImplementedError
 
     @staticmethod
-    def project_transform_onto_table(mujoco_quat: np.ndarray, check=True) -> np.ndarray:  
-        quat = mujoco_quat[[1,2,3,0]]
+    def project_transform_onto_table(mujoco_quat: np.ndarray, check=True) -> np.ndarray:
+        quat = mujoco_quat[[1, 2, 3, 0]]
         # Convert the input rotation to Euler angles with 'ZYX' convention
         euler_angles = Rotation.from_quat(quat).as_euler("ZYX")
 
@@ -486,18 +494,20 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
 
         # Convert the modified Euler angles back to the result
         quat = Rotation.from_euler("ZYX", euler_angles).as_quat()
-        res = quat[[3,0,1,2]]
+        res = quat[[3, 0, 1, 2]]
         if check:
-            assert np.allclose(res, BoxPushingEnvBase.project_transform_onto_table(res.copy(), check=False))
+            assert np.allclose(
+                res,
+                BoxPushingEnvBase.project_transform_onto_table(res.copy(), check=False),
+            )
         return res
 
     @staticmethod
-    def quat_to_z_theta(mujoco_quat: np.ndarray) -> float:  
-        quat = mujoco_quat[[1,2,3,0]]
+    def quat_to_z_theta(mujoco_quat: np.ndarray) -> float:
+        quat = mujoco_quat[[1, 2, 3, 0]]
         # Convert the input rotation to Euler angles with 'ZYX' convention
         euler_angles = Rotation.from_quat(quat).as_euler("ZYX")
         return float(euler_angles[0])
-
 
     def _get_obs(self):
         finger_pos = self.data.body("finger").xpos[:2].copy()
@@ -514,7 +524,6 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         box_theta = self.quat_to_z_theta(mujoco_quat=box_mujoco_quat)
         # quat = box_mujoco_quat[[1, 2, 3, 0]]
         # box_theta = np.linalg.norm(Rotation.from_quat(quat).as_rotvec())
-        
 
         # Simulate measurement error. We assume perfect finger positions and box rotations.
         # Box positions are assumed to have additive noise.
@@ -538,9 +547,9 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             [
                 finger_pos,
                 box_pos_measured,
-                #self.data.body("replan_target_pos")
-                #.xpos[:2]
-                #.copy(),  # position of target
+                # self.data.body("replan_target_pos")
+                # .xpos[:2]
+                # .copy(),  # position of target
                 # box_quat,
                 # self.data.body(
                 #     "replan_target_pos"
@@ -731,15 +740,20 @@ class BoxPushingDense(BoxPushingEnvBase):
         )
 
     def step(self, action):
+        action_clipped = np.clip(action, a_min=-1, a_max=1)
+        clip_penalty = 0.1 * np.linalg.norm(action - action_clipped)
+        action = action_clipped
+
         # Present the step based policy with a velocity action space and convert
         # it to position commands using a simple P controller.
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.5
+        k_p = 0.02
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
-        return BoxPushingEnvBase.step(self, pos_desired)
+        obs, reward, episode_end, infos = BoxPushingEnvBase.step(self, pos_desired)
+        return obs, reward - clip_penalty, episode_end, infos
 
     def _get_reward(
         self,
@@ -758,14 +772,6 @@ class BoxPushingDense(BoxPushingEnvBase):
         box_goal_rot_dist_reward = -rotation_distance(box_quat, target_quat) / np.pi
 
         reward = box_goal_pos_dist_reward + box_goal_rot_dist_reward
-        if self.ee_speeds:
-            # Max EE Speed Panality -- ensure the trajectory is executable
-            # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
-            # during the rollouts of Sweep70.
-            speed = self.ee_speeds[-1]
-            reward -= 0.005 * speed
-            if speed > self.speed_limit:
-                reward -= speed
 
         return (reward * 100) / MAX_EPISODE_STEPS_BOX_PUSHING
 

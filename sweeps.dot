@@ -108,6 +108,10 @@ digraph Sweeps {
     "Sweep119" [label=<Sweep119 - BB/RE <BR/> 117, but with sin/cos obs>];
     "Sweep120" [label=<Sweep120 - BB/RE <BR/> 119, but with DR>];
     "Sweep121" [label=<Sweep121 - BB/RE <BR/> 119, but only sim/cos obs, no quat>];
+    "Sweep122" [label=<Sweep122 - BB/RE <BR/> 121, but DR>];
+    "Sweep123" [label=<Sweep123 - TRPL <BR/> 121, but simplified SRL reward, SRL clipping>];
+    "Sweep125" [label=<Sweep125 - TRPL <BR/> 123, but push outside the box>];
+    "Sweep126" [label=<Sweep126 - TRPL <BR/> 125, but with DR>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -222,5 +226,9 @@ digraph Sweeps {
     "Sweep117" -> "Sweep119"
     "Sweep119" -> "Sweep120"
     "Sweep119" -> "Sweep121"
+    "Sweep121" -> "Sweep123"
+    "Sweep123" -> "Sweep125"
+    "Sweep122" -> "Sweep126"
+    "Sweep125" -> "Sweep126"
 }
 
