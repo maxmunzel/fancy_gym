@@ -26,7 +26,7 @@ from doraemon import Doraemon, MultivariateBetaDistribution
 import mujoco
 import gc
 
-MAX_EPISODE_STEPS_BOX_PUSHING = 250
+MAX_EPISODE_STEPS_BOX_PUSHING = 600
 
 BOX_POS_BOUND = np.array([[0.22, -0.35, -0.01], [0.58, 0.35, -0.01]])
 
@@ -408,8 +408,15 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
             self.data.joint("box_rot_joint").qpos = self.np_random.uniform(0, 2 * np.pi)
             self.data.joint("box_x_joint").qpos = box_init_pos[0]  # + box_err[0]
             self.data.joint("box_y_joint").qpos = box_init_pos[1]  # + box_err[1]
-            self.data.joint("finger_x_joint").qpos = box_init_pos[0]
-            self.data.joint("finger_y_joint").qpos = box_init_pos[1]
+            while True:
+                # find finger pos outside of box
+                sample = self.sample_context()
+                x = sample[0]
+                y = sample[1]
+                if np.linalg.norm(box_init_pos[:2] - [x, y]) >= 0.15:
+                    break
+            self.data.joint("finger_x_joint").qpos = x
+            self.data.joint("finger_y_joint").qpos = y
 
         # set target position
         box_target_pos = self.sample_context()
@@ -447,7 +454,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         return self._get_obs()
 
     def sample_context(self):
-        m = 0.05  # half a box width
+        m = 0.1  # box width
         pos = np.zeros(2)
         pos[1] = self.np_random.uniform(-0.39 + m, 0.39 - m)
         pos[0] = self.np_random.uniform(0.30 + m, 0.67 - m)
@@ -743,7 +750,7 @@ class BoxPushingDense(BoxPushingEnvBase):
         v_desired = np.array(action)
         v_is = self.data.body("finger").cvel.copy()[:2]
 
-        k_p = 0.04
+        k_p = 0.02
         pos_is = self.data.body("finger").xpos.copy()[:2]
         pos_desired = pos_is + k_p * (v_desired - v_is)
         obs, reward, episode_end, infos = BoxPushingEnvBase.step(self, pos_desired)
