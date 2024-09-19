@@ -116,7 +116,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         m = 0.064  # half the width of the box, as a margin between the workspace and the initial position
         mocap_max_err = 0.05
         dist = MultivariateBetaDistribution(
-            alphas=[1, 1, 1, 1, 1, 20, 10, 10],
+            alphas=[1, 1, 1, 1, 1, 1, 1, 1],
             # kp_opt = 168
             low=[
                 -0.39 + m,
@@ -138,7 +138,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
                 mocap_max_err,
                 mocap_max_err,
             ],
-            param_bound=[1, 1, 1, 1, 1, 20, 10, 10],
+            param_bound=[1, 1, 1, 1, 1, 1, 1, 1],
             names=[
                 "start_y",
                 "start_x",
@@ -373,10 +373,10 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         self.randomize()
         if self.doraemon is not None and redis_connection is None:
             self.doraemon.add_trajectory(self.sample, self.last_episode_successful)
-            try:
-                self.doraemon.update_dist()
-            except Exception as e:
-                print(f"update_dist() failed: {e}")
+            # try:
+            #    self.doraemon.update_dist()
+            # except Exception as e:
+            #    print(f"update_dist() failed: {e}")
 
         # rest box to initial position
         box_init_pos = (
