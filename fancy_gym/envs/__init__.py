@@ -265,7 +265,7 @@ register(
     id=f"Sweep122-replan-dense-50",
     entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
     kwargs={
-        "name": "BoxPushingDense-v0",
+        "name": "BoxPushingDensePosCtrl-v0",
         "wrappers": [mujoco.box_pushing.MPWrapper],
         "trajectory_generator_kwargs": {
             "trajectory_generator_type": "prodmp",
