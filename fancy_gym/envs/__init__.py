@@ -22,6 +22,7 @@ from .mujoco.reacher.reacher import ReacherEnv, MAX_EPISODE_STEPS_REACHER
 from .mujoco.walker_2d_jump.walker_2d_jump import MAX_EPISODE_STEPS_WALKERJUMP
 from .mujoco.box_pushing.box_pushing_env import (
     BoxPushingDense,
+    BoxPushingDensePosCtrl,
     BoxPushingTemporalSparse,
     BoxPushingTemporalSpatialSparse,
     MAX_EPISODE_STEPS_BOX_PUSHING,
@@ -261,42 +262,49 @@ DEFAULT_BB_DICT_ProDMP = {
     "black_box_kwargs": {},
 }
 # Max
-register(
-    id=f"Sweep122-replan-dense-50",
-    entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
-    kwargs={
-        "name": "BoxPushingDensePosCtrl-v0",
-        "wrappers": [mujoco.box_pushing.MPWrapper],
-        "trajectory_generator_kwargs": {
-            "trajectory_generator_type": "prodmp",
-            "duration": 5.0,
-            "action_dim": 2,
-            "weight_scale": 0.3,
-            "auto_scale_basis": True,
-            "goal_scale": 0.1,
-            "relative_goal": False,
-            "disable_goal": False,
+
+
+def make_replan_schedule(replan_interval: int):
+    return lambda pos, vel, obs, action, t: t % replan_interval == 0
+
+
+for replan_interval in [10, 23, 25, 50]:
+    register(
+        id=f"Sweep122-replan-dense-{replan_interval}",
+        entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
+        kwargs={
+            "name": "BoxPushingDensePosCtrl-v0",
+            "wrappers": [mujoco.box_pushing.MPWrapper],
+            "trajectory_generator_kwargs": {
+                "trajectory_generator_type": "prodmp",
+                "duration": 5.0,
+                "action_dim": 2,
+                "weight_scale": 0.3,
+                "auto_scale_basis": True,
+                "goal_scale": 0.1,
+                "relative_goal": False,
+                "disable_goal": False,
+            },
+            "phase_generator_kwargs": {
+                "phase_generator_type": "exp",
+                "tau": 3,
+            },
+            "controller_kwargs": {
+                "controller_type": "position",
+            },
+            "basis_generator_kwargs": {
+                "basis_generator_type": "prodmp",
+                "alpha": 15,
+                "num_basis": 5,
+                # 'num_basis_zero_start': 1,
+            },
+            "black_box_kwargs": {
+                "replanning_schedule": make_replan_schedule(replan_interval),
+                "condition_on_desired": True,
+            },
+            "random_init": True,
         },
-        "phase_generator_kwargs": {
-            "phase_generator_type": "exp",
-            "tau": 3,
-        },
-        "controller_kwargs": {
-            "controller_type": "position",
-        },
-        "basis_generator_kwargs": {
-            "basis_generator_type": "prodmp",
-            "alpha": 15,
-            "num_basis": 5,
-            # 'num_basis_zero_start': 1,
-        },
-        "black_box_kwargs": {
-            "replanning_schedule": lambda pos, vel, obs, action, t: t % 50 == 0,
-            "condition_on_desired": True,
-        },
-        "random_init": True,
-    },
-)
+    )
 register(
     id=f"Sweep114",  # based on Sweep78 Env
     entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
@@ -2041,7 +2049,7 @@ register(
 )
 
 # Box pushing environments with different rewards
-for reward_type in ["Dense", "TemporalSparse", "TemporalSpatialSparse"]:
+for reward_type in ["DensePosCtrl", "Dense", "TemporalSparse", "TemporalSpatialSparse"]:
     register(
         id="BoxPushing{}-v0".format(reward_type),
         entry_point="fancy_gym.envs.mujoco:BoxPushing{}".format(reward_type),
@@ -2338,6 +2346,7 @@ for _v in _versions:
 ## Box Pushing
 _versions = [
     "BoxPushingDense-v0",
+    "BoxPushingDensePosCtrl-v0",
     "BoxPushingTemporalSparse-v0",
     "BoxPushingTemporalSpatialSparse-v0",
     "BoxPushingRandomInitDense-v0",
