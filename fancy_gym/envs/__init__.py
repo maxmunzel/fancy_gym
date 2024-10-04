@@ -265,10 +265,13 @@ DEFAULT_BB_DICT_ProDMP = {
 
 
 def make_replan_schedule(replan_interval: int):
+    if not replan_interval:
+        # only replan in the first step
+        return lambda pos, vel, obs, action, t: t == 0
     return lambda pos, vel, obs, action, t: t % replan_interval == 0
 
 
-for replan_interval in [10, 23, 25, 50]:
+for replan_interval in [0, 10, 23, 25, 50]:
     register(
         id=f"Sweep122-replan-dense-{replan_interval}",
         entry_point="fancy_gym.utils.make_env_helpers:make_bb_env_helper",
