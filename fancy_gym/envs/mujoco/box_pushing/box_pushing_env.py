@@ -60,7 +60,7 @@ class BoxPushingEnvBase(MujocoEnv, utils.EzPickle):
         # Polymetis seems to only have joint speed limits but the following limit is based on the max ee speed
         # during the rollouts of Sweep70. The actual max is around .8 m/s, but .6 is a safe choice. Good policies
         # max out at around .4 m/s so this does not affect performance.
-        self.speed_limit = 0.6  # m/s
+        self.speed_limit = 0.4  # m/s
         self.init_qpos_box_pushing = np.array(
             [
                 0.0,
