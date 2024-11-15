@@ -280,7 +280,7 @@ for replan_interval in [0, 10, 23, 25, 50]:
             "wrappers": [mujoco.box_pushing.MPWrapper],
             "trajectory_generator_kwargs": {
                 "trajectory_generator_type": "prodmp",
-                "duration": 5.0,
+                "duration": 10.0,
                 "action_dim": 2,
                 "weight_scale": 0.3,
                 "auto_scale_basis": True,
@@ -290,7 +290,7 @@ for replan_interval in [0, 10, 23, 25, 50]:
             },
             "phase_generator_kwargs": {
                 "phase_generator_type": "exp",
-                "tau": 3,
+                "tau": 6,
             },
             "controller_kwargs": {
                 "controller_type": "position",
@@ -298,7 +298,7 @@ for replan_interval in [0, 10, 23, 25, 50]:
             "basis_generator_kwargs": {
                 "basis_generator_type": "prodmp",
                 "alpha": 15,
-                "num_basis": 5,
+                "num_basis": 10,
                 # 'num_basis_zero_start': 1,
             },
             "black_box_kwargs": {

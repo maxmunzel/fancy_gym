@@ -27,6 +27,5 @@ def example_fully_custom_mp(seed=1, iterations=1, render=True):
         rewards += reward
 
 
-
 if __name__ == "__main__":
-    example_fully_custom_mp(seed=10, iterations=100, render=True)
+    example_fully_custom_mp(seed=10, iterations=100, render=False)

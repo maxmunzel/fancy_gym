@@ -108,6 +108,7 @@ digraph Sweeps {
     "Sweep119" [label=<Sweep119 - BB/RE <BR/> 117, but with sin/cos obs>];
     "Sweep120" [label=<Sweep120 - BB/RE <BR/> 119, but with DR>];
     "Sweep121" [label=<Sweep121 - BB/RE <BR/> 119, but only sim/cos obs, no quat>];
+    "Sweep122" [label=<Sweep121 - BB/RE <BR/> 122, but with DORAEMON>];
 
     // Edges
     "Sweep8" -> "Sweep9"
@@ -222,5 +223,6 @@ digraph Sweeps {
     "Sweep117" -> "Sweep119"
     "Sweep119" -> "Sweep120"
     "Sweep119" -> "Sweep121"
+    "Sweep121" -> "Sweep122"
 }
 
