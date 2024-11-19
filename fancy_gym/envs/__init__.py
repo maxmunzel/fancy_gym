@@ -298,7 +298,7 @@ for replan_interval in [0, 10, 23, 25, 50]:
             "basis_generator_kwargs": {
                 "basis_generator_type": "prodmp",
                 "alpha": 15,
-                "num_basis": 10,
+                "num_basis": 5,
                 # 'num_basis_zero_start': 1,
             },
             "black_box_kwargs": {
